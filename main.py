@@ -40,7 +40,7 @@ def retrieve_answer(q):
         response = f"""### ✅ {row['Function']}
 **Syntax:** `{row['Syntax Example']}`  
 **Description:** {row['Function Description']}  
-[🔗 Anapedia Link]({row['Anapedia link for the that functions']})
+[🔗 Anapedia Link]({row['Anapedia link for that function']})
 """
         return response
     else:
