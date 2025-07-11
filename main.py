@@ -10,7 +10,7 @@ st.markdown("Ask me anything about Anaplan functions, modeling logic, and best p
 # Load function data (CSV)
 @st.cache_data
 def load_data():
-    url = "https://raw.githubusercontent.com/shaileshwaranaplan/munjya-anaplan-bot/main/anaplan_functions.csv"
+    url = "anaplan_functions.csv"
     return pd.read_csv(url)
 
 data = load_data()
