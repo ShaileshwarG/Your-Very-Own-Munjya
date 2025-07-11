@@ -60,4 +60,4 @@ if st.button("Ask Munjya"):
 if "logs" in st.session_state and st.session_state.logs:
     df_log = pd.DataFrame(st.session_state.logs, columns=["Timestamp", "User Query", "Bot Response"])
     csv = df_log.to_csv(index=False).encode("utf-8")
-    st.download_button("📥 Download Your Session Log", csv, "your_munjya_log.csv", "text/cs_
+    st.download_button("📥 Download Your Session Log", csv, "your_munjya_log.csv", "text/csv")
