@@ -8,7 +8,7 @@ from datetime import datetime
 scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
 creds = ServiceAccountCredentials.from_json_keyfile_name("service_account.json", scope)
 client = gspread.authorize(creds)
-sheet = client.open("Munjya_Bot_Logs_For_Core1").sheet1
+sheet = client.open("Munjya_Bot_Logs_For_Core1").sheet1  # ✅ Confirmed Sheet Name
 
 # --- Google Sheets Logger ---
 def log_to_google_sheets(query, response):
