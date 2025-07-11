@@ -15,7 +15,7 @@ credentials = Credentials.from_service_account_info(creds_dict, scopes=scopes)
 client = gspread.authorize(credentials)
 
 # Open the sheet
-sheet = client.open("Munjya_Bot_Logs_For_Core1").sheet1
+sheet = client.open_by_key("1ugdIE1ygUn8pW-6Dpf_eISuAAowzHIde2GeAddVQtEU").sheet1
 
 # ----------------------------- STREAMLIT APP -----------------------------
 st.set_page_config(page_title="Your Very Own Munjya", layout="wide")
