@@ -1,63 +1,61 @@
 import streamlit as st
 import pandas as pd
+import datetime
+import json
 import gspread
-from oauth2client.service_account import ServiceAccountCredentials
-from datetime import datetime
+from google.oauth2.service_account import Credentials
 
-# --- Google Sheets Setup ---
-scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
-creds = ServiceAccountCredentials.from_json_keyfile_name("service_account.json", scope)
-client = gspread.authorize(creds)
-sheet = client.open("Munjya_Bot_Logs_For_Core1").sheet1  # ✅ Confirmed Sheet Name
+# ----------------------------- GOOGLE SHEETS SETUP -----------------------------
+# Load Google credentials from Streamlit secrets
+creds_dict = json.loads(st.secrets["GOOGLE_SHEET_CREDENTIALS"])
 
-# --- Google Sheets Logger ---
-def log_to_google_sheets(query, response):
-    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    sheet.append_row([timestamp, query, response])
+# Setup scopes and authenticate
+scopes = ["https://www.googleapis.com/auth/spreadsheets"]
+credentials = Credentials.from_service_account_info(creds_dict, scopes=scopes)
+client = gspread.authorize(credentials)
 
-# --- Load Anaplan Functions Data ---
-@st.cache_data
-def load_data():
-    url = "https://raw.githubusercontent.com/ShaileshwarG/Your-Very-Own-Munjya/main/anaplan_functions.csv"
-    return pd.read_csv(url)
+# Open the sheet
+sheet = client.open("Munjya_Bot_Logs_For_Core1").sheet1
 
-data = load_data()
+# ----------------------------- STREAMLIT APP -----------------------------
+st.set_page_config(page_title="Your Very Own Munjya", layout="wide")
+st.title("🤖 Your Very Own Munjya")
+st.markdown("Ask anything related to Anaplan, supply chain logic, or Core 1 solutions.")
 
-# --- Streamlit App UI ---
-st.set_page_config(page_title="Your Very Own Munjya 🤖", page_icon="🤖")
-st.title("Ask Munjya About Anaplan Functions")
+# Session state for storing conversation
+if "conversation" not in st.session_state:
+    st.session_state.conversation = []
 
-user_input = st.text_input("🔍 Enter your Anaplan function or question:")
+# User input
+query = st.text_input("💬 Ask Munjya:", placeholder="Type your question here and press Enter...")
 
-if st.button("Ask Munjya"):
-    if user_input:
-        # Search for exact match
-        match = data[data['Function'].str.lower() == user_input.strip().lower()]
+# Simple response simulation (to be replaced with actual LLM or logic)
+def mock_munjya_response(q):
+    return f"🤖 This is a mock response for: '{q}'"
 
-        if not match.empty:
-            row = match.iloc[0]
-            response = f"""
-### 🔍 Function: `{row['Function']}`  
-📘 **Description**: {row['Function Description']}  
-📌 **Syntax**: `{row['Syntax Example']}`  
-🔗 [Read more on Anapedia]({row['Anapedia Link']})
-            """
-        else:
-            response = "❌ Function not found. Please check the spelling or try a different keyword."
+# Save to log and display conversation
+if query:
+    response = mock_munjya_response(query)
+    st.session_state.conversation.append((query, response))
 
-        # Show result
-        st.markdown(response, unsafe_allow_html=True)
+    # Log to Google Sheet
+    timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    user = st.secrets.get("USER_EMAIL", "anonymous")  # Optional field
+    sheet.append_row([timestamp, user, query, response])
 
-        # ✅ Log to Google Sheet
-        log_to_google_sheets(user_input, response)
+# Display conversation
+if st.session_state.conversation:
+    st.subheader("🗂️ Chat Log")
+    for q, r in st.session_state.conversation:
+        st.markdown(f"**You:** {q}")
+        st.markdown(f"**Munjya:** {r}")
 
-        # Save in session for download
-        if "logs" not in st.session_state:
-            st.session_state.logs = []
-        st.session_state.logs.append((datetime.now(), user_input, response))
-
-# --- Downloadable Log Button ---
-if "logs" in st.session_state and st.session_state.logs:
-    df_log = pd.DataFrame(st.session_state.logs, columns=["Timestamp", "User Query", "Bot Response"])
-    csv = df_log.to_csv(index=False).encode("utf-8")
+# Allow session log download
+if st.session_state.conversation:
+    df = pd.DataFrame(st.session_state.conversation, columns=["User", "Munjya"])
+    csv = df.to_csv(index=False).encode("utf-8")
     st.download_button("📥 Download Your Session Log", csv, "your_munjya_log.csv", "text/csv")
+
+# Footer
+st.markdown("---")
+st.caption("Maintained by Core_1 | Logs are saved securely in Google Sheets.")
