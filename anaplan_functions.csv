@@ -1,0 +1,11 @@
+Function,Syntax Example,Anapedia link for that function,Function Description
+TIMESUM,TIMESUM(Sales, TIME.'FY20'),https://help.anaplan.com/timesum-0e7320ce-3b52-4d1e-946b-614acefd6c8e,Aggregates values across a specified time range.
+LOOKUP,Revenue[LOOKUP: Product],https://help.anaplan.com/lookup-2b88f039-20ce-44d2-b893-5cde35e6cffa,Retrieves values based on mapping from another list.
+SELECT,Revenue[SELECT: Time.'Jan 24'],https://help.anaplan.com/select-64e6e4a1-6f0a-46cf-962d-26df72a2dcbf,Selects a specific item from a list or time period.
+IF THEN ELSE,IF Sales > 1000 THEN "High" ELSE "Low",https://help.anaplan.com/if-then-else-6ff15702-fb92-494b-81fd-65b7a2a615cc,Performs conditional logic.
+ISBLANK,ISBLANK(LineItem),https://help.anaplan.com/isblank-1f6fe389-c4e4-4078-8329-0a915fa9dfb8,Checks whether a cell is blank.
+FINDITEM,FINDITEM(Product, Code),https://help.anaplan.com/finditem-2ecb95bf-d5b0-4c5b-bd1c-baf20b7e43a8,Finds a list item based on a code or name string.
+CODE,CODE(Item),https://help.anaplan.com/code-5b9ed23c-c5b3-4a3e-8b8b-f3677f002201,Returns the code of a list item.
+RANK,RANK(Sales),https://help.anaplan.com/rank-8fffa1e7-b99d-47e1-bb1d-98293b67c984,Assigns rank to values across a list.
+CUMULATE,CUMULATE(Sales, TRUE, Time),https://help.anaplan.com/cumulate-fcb0151e-9c7f-4c55-a497-10e16751474c,Calculates a running total across a list or time.
+PREVIOUS,PREVIOUS(Sales),https://help.anaplan.com/previous-c12e24c0-1b36-4be6-b9d7-1b68ec5f8ebf,Returns the value from the previous time period.
