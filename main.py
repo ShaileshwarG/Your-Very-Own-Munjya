@@ -4,6 +4,38 @@ from google.oauth2.service_account import Credentials
 import pandas as pd
 from datetime import datetime
 
+
+# --------------------------------------------
+# 🧠 Simulated Core_1 Query Function
+# --------------------------------------------
+
+def query_core_1(user_query):
+    """
+    Simulates querying Core_1 knowledge base in read-only mode.
+    Returns either a valid Core_1 response or a fallback message.
+    """
+
+    # Sample logic bank (expandable later)
+    logic_map = {
+        "5-week rolling average WoS": "Use a SYS Time Week module with week-to-quarter mapping and rolling lookup logic across the last 5 weeks. Reset every 13 weeks using MOD(WEEK NUMBER, 13).",
+        "constraint supply plan": "Apply W1-W3 formulas for initial weeks with non-zero shipment. From first zero shipment week, revert to base supply plan values.",
+        "constraint demand plan": "Mirror constraint supply plan structure but include backward reference to Shipment Plan. Avoid circular logic and double counting.",
+        "anaplan sum vs lookup": "`SUM` aggregates across a dimension (e.g., Products), while `LOOKUP` fetches a value from a specific mapping (e.g., Region to Sales Rep).",
+        "collect function": "COLLECT() retrieves values from a line item in a target module when used with a saved view or mapping.",
+    }
+
+    for key, value in logic_map.items():
+        if key.lower() in user_query.lower():
+            return f"🧠 Core_1 Match:\n\n{value}"
+
+    # Fallback if no match
+    return (
+        "⚠️ No direct Core_1 match found.\n"
+        "This might be a new topic. Core_1 will review and decide whether to include it.\n\n"
+        "👉 In the meantime, reframe your query or use fallback search."
+    )
+
+
 # ------------------ GOOGLE SHEETS AUTH ------------------ #
 SCOPE = ["https://www.googleapis.com/auth/spreadsheets",
          "https://www.googleapis.com/auth/drive"]
