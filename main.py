@@ -1,50 +1,17 @@
 import streamlit as st
+import datetime
 import gspread
 from google.oauth2.service_account import Credentials
-import pandas as pd
-from datetime import datetime
+from query_core_1 import query_core_1  # 🧠 Your logic head
+from gspread.exceptions import APIError
 
-
-# --------------------------------------------
-# 🧠 Simulated Core_1 Query Function
-# --------------------------------------------
-
-def query_core_1(user_query):
-    """
-    Simulates querying Core_1 knowledge base in read-only mode.
-    Returns either a valid Core_1 response or a fallback message.
-    """
-
-    # Sample logic bank (expandable later)
-    logic_map = {
-        "5-week rolling average WoS": "Use a SYS Time Week module with week-to-quarter mapping and rolling lookup logic across the last 5 weeks. Reset every 13 weeks using MOD(WEEK NUMBER, 13).",
-        "constraint supply plan": "Apply W1-W3 formulas for initial weeks with non-zero shipment. From first zero shipment week, revert to base supply plan values.",
-        "constraint demand plan": "Mirror constraint supply plan structure but include backward reference to Shipment Plan. Avoid circular logic and double counting.",
-        "anaplan sum vs lookup": "`SUM` aggregates across a dimension (e.g., Products), while `LOOKUP` fetches a value from a specific mapping (e.g., Region to Sales Rep).",
-        "collect function": "COLLECT() retrieves values from a line item in a target module when used with a saved view or mapping.",
-    }
-
-    for key, value in logic_map.items():
-        if key.lower() in user_query.lower():
-            return f"🧠 Core_1 Match:\n\n{value}"
-
-    # Fallback if no match
-    return (
-        "⚠️ No direct Core_1 match found.\n"
-        "This might be a new topic. Core_1 will review and decide whether to include it.\n\n"
-        "👉 In the meantime, reframe your query or use fallback search."
-    )
-
-
-# ------------------ GOOGLE SHEETS AUTH ------------------ #
-SCOPE = ["https://www.googleapis.com/auth/spreadsheets",
-         "https://www.googleapis.com/auth/drive"]
-
+# -------------------- Auth Setup -------------------- #
+SCOPE = ["https://www.googleapis.com/auth/spreadsheets"]
 creds = Credentials.from_service_account_info({
     "type": st.secrets["type"],
     "project_id": st.secrets["project_id"],
     "private_key_id": st.secrets["private_key_id"],
-    "private_key": st.secrets["private_key"].replace("\\n", "\n"),
+    "private_key": st.secrets["private_key"],
     "client_email": st.secrets["client_email"],
     "client_id": st.secrets["client_id"],
     "auth_uri": st.secrets["auth_uri"],
@@ -55,67 +22,57 @@ creds = Credentials.from_service_account_info({
 }, scopes=SCOPE)
 
 client = gspread.authorize(creds)
-sheet = client.open_by_key("1ugdIE1ygUn8pW-6Dpf_eISuAAowzHIde2GeAddVQtEU").sheet1
+sheet = client.open_by_url("https://docs.google.com/spreadsheets/d/1ugdIE1ygUn8pW-6Dpf_eISuAAowzHIde2GeAddVQtEU").sheet1
 
-# ------------------ QUERY PROCESSING ENGINE ------------------ #
-def query_core_1(user_query: str):
-    query = user_query.lower().strip()
+# -------------------- Streamlit UI -------------------- #
+st.set_page_config(page_title="Munjya Bot", page_icon="🤖")
+st.title("🤖 Munjya Bot - Powered by Core_1")
 
-    if "wos" in query and "5 week" in query:
-        return "Use 5-week rolling average WoS with quarter reset. Reference SYS Time Week module for QuarterID and build dynamic mapping for first/last week."
+query = st.text_input("Enter your Anaplan or Supply Chain query:")
+submit = st.button("Ask Munjya")
 
-    elif "constraint supply plan" in query:
-        return ("Apply W1 for first week only, W2-W3 logic for initial non-zero shipment weeks. "
-                "From the first zero shipment week, switch to W4+ logic using Supply Plan."
-                " Dynamically identify first zero after non-zero using running count or booleans.")
+# -------------------- Core + Fallback -------------------- #
+def query_with_fallback(user_query):
+    response = query_core_1(user_query)  # Try Core_1
+    source = "Core_1"
 
-    elif "constraint demand plan" in query:
-        return ("Base Constraint Demand Plan on the active Constraint Supply Plan. Ensure proper logic to avoid double counting."
-                " Use LOOKUPs and TIMESUM with appropriate filtering modules. Validate against Excel behavior.")
+    if not response or response.strip() == "":
+        source = "GPT fallback"
+        with st.spinner("No direct match found in Core_1. Trying fallback model..."):
+            import openai
+            openai.api_key = st.secrets.get("openai_api_key", "")
+            if openai.api_key:
+                fallback = openai.ChatCompletion.create(
+                    model="gpt-4",
+                    messages=[
+                        {"role": "system", "content": "You are a Master Anaplanner and Supply Chain expert. Respond concisely."},
+                        {"role": "user", "content": user_query}
+                    ]
+                )
+                response = fallback.choices[0].message.content.strip()
+            else:
+                response = "Fallback failed: OpenAI key not configured."
 
-    elif "assign account to territory" in query:
-        return ("Use SYS Account, SYS Territory modules. Store assignment in TAR01. Reference user stories from Level 3 Sales Planning."
-                " Ensure RANK and ISFIRSTOCCURRENCE are used for scoring and assignment.")
+    return response, source
 
-    elif "designate sales rep" in query:
-        return ("Use REP01, TAR01, and Assignment mapping logic. Build scoring mechanism based on capacity, performance, territory compatibility."
-                " Design user-facing process using UX worksheet guidance.")
+# -------------------- Action -------------------- #
+if submit and query:
+    try:
+        with st.spinner("Thinking like Core_1..."):
+            answer, source = query_with_fallback(query)
 
-    elif "isfirstoccurrence" in query:
-        return "ISFIRSTOCCURRENCE(Boolean, List) returns TRUE for the first TRUE occurrence in a list context. Useful in filtering, ranking."
+        st.markdown(f"**Munjya says:**\n\n{answer}")
+        sheet.append_row([
+            datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            query,
+            answer,
+            source
+        ])
+        st.success(f"Logged to sheet via {source}")
 
-    elif "rank" in query:
-        return "Use RANK to order values, optionally by group. Handle ties using MIN/MAX/SEQUENTIAL. Avoid circular references in complex rank chains."
-
-    elif "circular reference" in query:
-        return "Avoid daisy chaining logic. Separate modules by function and use clear calculation paths. Prefer LOOKUP and TIMESUM over SELECT."
-
-    elif "performance" in query and "anaplan" in query:
-        return "Limit line item count, avoid dense multi-dim modules, use subsets, turn off summary when not needed. Use ALM for controlled deployments."
-
-    return None
-
-# ------------------ STREAMLIT UI ------------------ #
-st.set_page_config(page_title="Your Very Own Munjya", page_icon="🤖")
-st.title("🤖 Your Very Own Munjya")
-
-user_input = st.text_input("Ask me anything about Anaplan logic, supply chain, or Core_1 knowledge:")
-
-if user_input:
-    core_response = query_core_1(user_input)
-
-    if core_response:
-        st.success(f"🧠 Core_1 Response:\n\n{core_response}")
-    else:
-        st.info("🤖 This question is being escalated to Core_1’s fallback AI. (Mocked response below)")
-        st.markdown("*‘I’m searching deeper...’*")
-        st.warning("🚧 This part is under development. You’ll soon get detailed fallback responses here.")
-
-    # Append log to sheet
-    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    sheet.append_row([timestamp, user_input, core_response or "Fallback Triggered"])
-
-# ------------------ SESSION DOWNLOAD ------------------ #
-log_data = pd.DataFrame(sheet.get_all_records())
-csv = log_data.to_csv(index=False)
-st.download_button("📥 Download Your Session Log", csv, "your_munjya_log.csv", "text/csv")
+    except APIError as e:
+        st.error("⚠️ Error logging to sheet. Check Google credentials or sheet sharing.")
+        st.exception(e)
+    except Exception as e:
+        st.error("❌ Unexpected error occurred.")
+        st.exception(e)
