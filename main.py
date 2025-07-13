@@ -2,10 +2,10 @@ import streamlit as st
 import datetime
 import gspread
 from google.oauth2.service_account import Credentials
-from query_core_1 import query_core_1  # 🧠 Your logic head
 from gspread.exceptions import APIError
+from query_core_1 import query_core_1  # Core_1 head logic
 
-# -------------------- Auth Setup -------------------- #
+# 🔐 Google Sheets Auth
 SCOPE = ["https://www.googleapis.com/auth/spreadsheets"]
 creds = Credentials.from_service_account_info({
     "type": st.secrets["type"],
@@ -24,55 +24,58 @@ creds = Credentials.from_service_account_info({
 client = gspread.authorize(creds)
 sheet = client.open_by_url("https://docs.google.com/spreadsheets/d/1ugdIE1ygUn8pW-6Dpf_eISuAAowzHIde2GeAddVQtEU").sheet1
 
-# -------------------- Streamlit UI -------------------- #
-st.set_page_config(page_title="Munjya Bot", page_icon="🤖")
-st.title("🤖 Munjya Bot - Powered by Core_1")
+# 🤖 UI Setup
+st.set_page_config(page_title="Your Anaplan/SupplyChain Buddy - The personal Munjya", page_icon="🧠")
+st.title("🧠 Your Anaplan/SupplyChain Buddy - The personal Munjya")
 
-query = st.text_input("Enter your Anaplan or Supply Chain query:")
+# 🧠 Query Input
+query = st.text_input("Ask your question (Anaplan, Supply Chain, Formulas, Planning...)")
 submit = st.button("Ask Munjya")
 
-# -------------------- Core + Fallback -------------------- #
+# 🧠 Fallback Setup
+from openai import OpenAI
+openai_client = OpenAI(api_key=st.secrets.get("openai_api_key", ""))
+
 def query_with_fallback(user_query):
-    response = query_core_1(user_query)  # Try Core_1
+    response = query_core_1(user_query)
     source = "Core_1"
 
     if not response or response.strip() == "":
         source = "GPT fallback"
         with st.spinner("No direct match found in Core_1. Trying fallback model..."):
-            import openai
-            openai.api_key = st.secrets.get("openai_api_key", "")
-            if openai.api_key:
-                fallback = openai.ChatCompletion.create(
+            try:
+                completion = openai_client.chat.completions.create(
                     model="gpt-4",
                     messages=[
-                        {"role": "system", "content": "You are a Master Anaplanner and Supply Chain expert. Respond concisely."},
+                        {"role": "system", "content": "You are a Master Anaplanner and Supply Chain expert. Respond concisely and precisely."},
                         {"role": "user", "content": user_query}
                     ]
                 )
-                response = fallback.choices[0].message.content.strip()
-            else:
-                response = "Fallback failed: OpenAI key not configured."
+                response = completion.choices[0].message.content.strip()
+            except Exception as e:
+                response = f"Fallback failed: {str(e)}"
 
     return response, source
 
-# -------------------- Action -------------------- #
+# 🚀 Main Logic
 if submit and query:
     try:
-        with st.spinner("Thinking like Core_1..."):
+        with st.spinner("Munjya is thinking..."):
             answer, source = query_with_fallback(query)
 
-        st.markdown(f"**Munjya says:**\n\n{answer}")
+        st.markdown(f"### Munjya says:\n\n{answer}")
+        
+        # ✅ Log to sheet
         sheet.append_row([
             datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
             query,
             answer,
             source
         ])
-        st.success(f"Logged to sheet via {source}")
+        st.success(f"📝 Logged successfully via `{source}`")
 
-    except APIError as e:
-        st.error("⚠️ Error logging to sheet. Check Google credentials or sheet sharing.")
-        st.exception(e)
+    except APIError:
+        st.error("⚠️ Issue writing to Google Sheet. Check sharing permissions and API status.")
     except Exception as e:
         st.error("❌ Unexpected error occurred.")
         st.exception(e)
