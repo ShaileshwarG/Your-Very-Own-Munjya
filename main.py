@@ -45,7 +45,7 @@ def query_with_fallback(user_query):
         with st.spinner("No direct match found in Core_1. Trying fallback model..."):
             try:
                 completion = openai_client.chat.completions.create(
-                    model="gpt-4",
+                    model="gpt-3.5-turbo",
                     messages=[
                         {"role": "system", "content": "You are a Master Anaplanner and Supply Chain expert. Respond concisely and precisely."},
                         {"role": "user", "content": user_query}
