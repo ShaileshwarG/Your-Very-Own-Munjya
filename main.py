@@ -53,7 +53,11 @@ def query_with_fallback(user_query):
                 )
                 response = completion.choices[0].message.content.strip()
             except Exception as e:
-                response = f"Fallback failed: {str(e)}"
+                response = (
+                    "🧠 I'm still learning, and this part isn't in my Core_1 memory yet. "
+                    "Thank you for the question — I’ll learn this soon!"
+                )
+                source = "Core_1 only (fallback failed)"
 
     return response, source
 
