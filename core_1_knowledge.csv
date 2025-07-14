@@ -1,0 +1,578 @@
+﻿query,response
+What does the SUM function do in Anaplan?,The SUM function in Anaplan aggregates values from a source module to a target module using a mapping. It's typically used when the source has more detailed dimensions. Syntax: Source.LineItem[SUM: Mapping]
+When should I use LOOKUP instead of SUM in Anaplan?,"Use LOOKUP when you're retrieving a specific value based on a one-to-one relationship. It's for pulling values using list or time mappings, not for aggregation. Syntax: Source.LineItem[LOOKUP: Mapping]"
+What causes a circular reference in Anaplan and how to avoid it?,A circular reference occurs when a line item directly or indirectly depends on its own result. Avoid this by breaking the logic into separate modules or using OFFSET/POST to refer to prior periods.
+How is OFFSET used in Anaplan?,"OFFSET shifts values forward or backward in time. It's useful for referencing prior or future weeks. Syntax: OFFSET(Line Item, Offset Amount, Substitution Value)."
+Explain the difference between SELECT and LOOKUP in Anaplan,"SELECT is hardcoded and refers to a specific item in a list (e.g., a specific version or time). LOOKUP is dynamic and uses a mapping line item. Use LOOKUP for scalable design."
+What is the CUMULATE function used for?,"CUMULATE accumulates values across time. It's typically used to build running totals. Syntax: CUMULATE(Line Item, Direction, Reset Boolean)."
+What is a best practice to avoid hardcoding SELECT in Anaplan models?,Use LOOKUP with a mapping system module instead of SELECT. This ensures scalability and avoids model fragility due to structural changes.
+What is the purpose of the POST function in Anaplan?,"POST pushes values to a future period based on an offset. Useful in planning scenarios where lead time or delays must be factored. Syntax: POST(Value, Offset Line Item)"
+How do I handle circular reference when calculating rolling inventory in Anaplan?,Break the logic into multiple line items or use helper modules. Use PREVIOUS or OFFSET to reference prior week's cumulative value instead of the same line item.
+Why is aggregation failing in Anaplan with 'incompatible dimensions' error?,This usually occurs when dimensions between source and target do not align. Resolve by checking if your SUM/LOOKUP/SELECT mapping matches dimensionality.
+What is the difference between PREVIOUS and OFFSET in Anaplan?,PREVIOUS only works on Time and refers to the immediate prior period. OFFSET is more flexible-it can shift values multiple periods forward or backward.
+How can I calculate Weeks of Supply (WoS) in Anaplan?,WoS = Inventory / Average Weekly Demand. Use MOVINGSUM to average demand and make sure time alignment is correct.
+What is the formula to calculate Fill Rate in Anaplan?,Fill Rate = Actual Receipts / Orders Placed. Use a helper to cap at 100% and handle 0 denominator cases using IF THEN logic.
+How do I prevent zeros in the denominator in Anaplan formulas?,Wrap the denominator with a condition: IF Denominator = 0 THEN 1 ELSE Denominator. Or use IF Denominator <> 0 THEN Result ELSE 0.
+What is switchover in Anaplan versions and how does it affect formulas?,Switchover shifts actuals into the forecast. It's enabled at version level and impacts time-based formulas. Use CHECKVERSION() to handle logic separately if needed.
+Can I cumulate values only after a current week in Anaplan?,Yes. Use a Boolean flag like 'Is Current or Future Week?' and apply it in the CUMULATE reset or include conditionally in logic.
+How to calculate safety stock?,"Safety Stock = Z-score × σ(LT Demand). In Anaplan, estimate standard deviation of lead time demand and apply the formula per SKU-location."
+What is a best practice to handle multi-week rolling averages in Anaplan?,"Use MOVINGSUM(LineItem, -n + 1, 0) / n. Reset using Booleans if rolling averages restart every X weeks."
+What causes 'invalid line item identifier' error in Anaplan imports?,This usually happens when source and target formats (list names or line item headers) don't match or aren't mapped correctly. Ensure correct naming and mapping.
+How do I snapshot values across time in Anaplan?,Use a process to copy values into a line item that stores only current week data. Combine with POST or OFFSET to push values across time.
+What is a constraint demand plan?,"A Constraint Demand Plan limits demand based on available supply or capacity. Formula: Constraint Demand = MIN(Demand, Supply + Inventory)"
+What is a constraint supply plan?,"A Constraint Supply Plan limits supply based on shipment plan or available capacity. Can be calculated dynamically using MIN(Available, Demand) or cumulative logic."
+How to calculate rolling 5-week average of demand in Anaplan?,"Use MOVINGSUM(LineItem, -4, 0)/5. Ensure the time range includes at least 5 weeks and handles beginning-of-period edge cases."
+Why is CUMULATE not working correctly in Anaplan?,"CUMULATE requires time dimension. Also check the 'Reset Boolean'-if it resets too early or too late, totals will be incorrect."
+What's a robust way to calculate EOH (End of Horizon) inventory?,EOH = Opening Inventory + Supply - Demand. Use PREVIOUS or OFFSET to link inventory flow week-over-week.
+How to implement first week of quarter logic in Anaplan?,Create a system module with WEEK formatted time and a Boolean 'Is First Week of Quarter' using PERIOD(START()) and quarter comparisons.
+What's the difference between Module Applies To and Line Item Applies To?,Modules define default dimensionality. Line items can override this. Always align dimensions explicitly when logic diverges.
+What's the best way to implement TWOS (Target Weeks of Supply)?,Input TWOS at a higher level (e.g. SKU/Location) and cascade down using LOOKUP. Ensure dimensional mapping exists in a system module.
+What is the function of MOVINGSUM?,"MOVINGSUM performs a running sum over a time window. Useful for rolling averages or cumulative periods. Syntax: MOVINGSUM(LineItem, Start, End)."
+How do you handle mismatched time scales during import?,"Map time using 'Fixed Position Pattern' or 'Match Names' with proper time format. Ensure consistency in weekly, monthly, or custom time scales."
+Why use a System module for flags like Current Week or Scenario?,"System modules centralize logic, reduce redundancy, and make formulas maintainable. They're foundational for scalable model design."
+Why is SUM giving aggregation error?,Likely because the 'SUM:' mapping line item is not dimensioned by the list it's mapping to. Fix by adding appropriate mapping dimension to the source line item.
+How do you calculate Inventory Turns in Anaplan?,Inventory Turns = Annualized Demand / Average Inventory. Lower inventory or higher demand increases turns. Use MOVINGSUM and conditional time filters.
+How to write a formula to avoid negative inventory?,"Use MAX(0, Inventory Calculation). Prevents inventory from dropping below zero in projection line items."
+What is the SUM function in Anaplan and when do you use it?,The SUM function in Anaplan is used to aggregate values from a source module into a target module based on a mapping. It's most commonly used for dimensional transformations like summarizing data from SKU level to Product level. Syntax: `Module.LineItem[SUM: Mapping Line Item]`.
+How does LOOKUP work in Anaplan?,LOOKUP retrieves a specific value from another module based on a mapping. It's a one-to-one mapping logic. Syntax: `SourceModule.LineItem[LOOKUP: Mapping Line Item]`. The mapping must match a dimension in the source.
+What's the difference between SUM and LOOKUP in Anaplan?,"SUM aggregates many-to-one (e.g., SKU to Product), while LOOKUP retrieves a single value using a one-to-one mapping (e.g., Product Code to Product). Use SUM when rolling up data; use LOOKUP when fetching a specific mapped value."
+How does the OFFSET function work in Anaplan?,"OFFSET shifts data forward or backward by a given number of periods. Useful for lagging or leading time-based values. Syntax: `OFFSET(LineItem, Offset Amount, Default)`."
+What's a circular reference in Anaplan and how can I avoid it?,"A circular reference occurs when a line item directly or indirectly refers back to itself, making the calculation impossible. Avoid by restructuring logic, separating stages into modules, or using PREVIOUS/OFFSET cautiously."
+How do you use POST in Anaplan?,"POST shifts a value forward in time by a specified number of periods. Often used for distributing inventory or demand into future buckets. Syntax: `POST(LineItem, Delay Line Item)`."
+Explain CUMULATE function in Anaplan.,"CUMULATE sums values across time, optionally resetting based on a Boolean. Syntax: `CUMULATE(LineItem, Reset Boolean, Direction)`."
+What is a SELECT statement and how should it be used in Anaplan?,"SELECT retrieves a specific item from a list or time hierarchy, but breaks compatibility with ALM and versions. Use only for constants or administrative values. Syntax: `LineItem[SELECT: List.Item]`."
+How do you calculate Weeks of Supply (WoS) in Anaplan?,WoS = Inventory / Average Weekly Demand. You can use MOVINGSUM or OFFSET to calculate rolling average demand. Example: `Inventory / AVERAGE(Demand[LAST 5 Weeks])`.
+How to build a 5-week rolling average in Anaplan?,"Use `MOVINGSUM(LineItem, -4, 0, AVERAGE)` to calculate average over the current and previous 4 weeks. Adjust the range as needed."
+What is the best way to reset a cumulative value every 13 weeks?,"Use a helper Boolean line item to flag the first week of every 13-week cycle. Then use `CUMULATE(LineItem, Reset Boolean)`."
+What causes a time scale mismatch error in Anaplan?,It occurs when line items or modules involved in a formula have incompatible time settings. Resolve by aligning time scales or using LOOKUP to fetch across time.
+What's the use of PREVIOUS in Anaplan?,PREVIOUS fetches the value of the same line item from the prior time period. Useful in calculating time-dependent metrics like inventory or forecast lags.
+How to prevent circular reference while calculating cumulative logic?,"Split logic across multiple line items or use OFFSET/POST to decouple direct dependencies. Example: use `Offset(CumValue, -1, 0) + ThisPeriodValue` instead of direct recursion."
+What is the best practice to handle snapshot logic in Anaplan?,"Use a Boolean flag for current week, store snapshot using `IF IsCurrentWeek THEN Value ELSE PREVIOUS(Snapshot)` logic, and persist data over time."
+How to convert days to weeks in Anaplan?,"If a line item stores days as number, divide by 7. Example: `LineItem / 7`. Use `ROUND(LineItem / 7, 1)` for one decimal place."
+What is safety stock in supply chain planning?,"Safety Stock is the buffer inventory kept to mitigate uncertainties in demand or supply. Formula: `Z * σ * √LT` where Z = service factor, σ = demand variability, LT = lead time."
+What is the Reorder Point (ROP)?,ROP is the inventory level at which a replenishment order should be triggered. Formula: `ROP = Safety Stock + (Average Daily Demand × Lead Time)`.
+Why is ROP always greater than or equal to Safety Stock?,Because ROP includes safety stock plus expected consumption during lead time. Mathematically: `ROP = SS + D × LT`.
+What is inventory turns and how is it improved?,Inventory turns = COGS / Average Inventory. Improve turns by increasing sales or reducing inventory levels. Higher turns indicate efficient inventory usage.
+When should we use INNER JOIN in SQL?,Use INNER JOIN when you only want rows with matching keys in both tables. Ideal when working with complete data sets from related entities.
+When is LEFT JOIN preferred in SQL?,Use LEFT JOIN when you want all rows from the left table and matching data from the right - helpful for identifying missing data.
+Write a SQL query to get employee names and departments where age is between 55 and 60.,"`SELECT Name, Department FROM Employee WHERE Age BETWEEN 55 AND 60;`"
+What is a typical way to implement constrained supply planning in Anaplan?,"Use `MIN(Cumulative Supply, Cumulative Demand) - Prior Fulfilled` logic. Include frozen period or actual shipment override logic if needed."
+How to identify the current week in Anaplan?,"In a SYS Time module, flag `ISCURRWEEK()` or set a Boolean manually for the Current Week. Use this flag in downstream modules via LOOKUP."
+How to build a constrained demand plan in Anaplan?,"Use cumulative inventory and demand logic. Example: `MIN(Cumulative Demand, Opening Inventory + Supply) - Prior Consumption`."
+How do you handle planning across multiple versions?,"Use version-dimensioned modules and apply SELECT only for constants. Alternatively, use user-controlled filters or DCA."
+How to enable user input only for a certain version in Anaplan?,"Use DCA (Dynamic Cell Access). Create a Boolean line item like `Input Access = Version = 'User Input'`, then apply it to Write Access."
+How to aggregate product-level data to category level in Anaplan?,"Ensure product list rolls up into category, then use built-in aggregation by parent hierarchy. SUM not needed if list is structured."
+How does Anaplan handle list-formatted line item summary?,List-formatted line items default to `None` summary. Use `First Non-Blank` when pulling a single selection upward (like category choice).
+How to handle IF/THEN logic based on list items in Anaplan?,"Use: `IF LineItem = List.Item THEN Value ELSE Alternative`. For multiple items, consider SWITCH expression or nested IFs."
+Can we use ISFIRSTOCCURRENCE in Anaplan?,"ISFIRSTOCCURRENCE is used to detect the first appearance of an item in a list. Syntax: `ISFIRSTOCCURRENCE(Item, List)` - often used in numbered lists."
+What's the best way to filter time periods dynamically in Anaplan?,"Use a SYS Time module with Booleans like `IsCurrentWeek`, `IsForecast`, `IsActuals`, and reference them in module filters."
+How to handle time summary in Anaplan for averages?,Set the summary method to `Average` and ensure time scale is weekly or monthly as needed. Use MOVINGSUM for rolling calculations.
+How to avoid SELECT in multi-version models?,Use LOOKUP with a version-mapping system module. Avoid hard-coded SELECTs for better ALM compatibility.
+What is a good way to apply a cascading dropdown filter in UX?,Use dependent lists in system modules and apply them in UX page selectors using filter line items or context selectors.
+What's the difference between POST and OFFSET in Anaplan?,"POST spreads a value forward into another period; OFFSET retrieves the value from a different period. POST affects target period, OFFSET pulls from a source period."
+How does POST help in lead-time based calculations?,"Use POST to shift an order by lead time to calculate when it will be received. Example: `POST(OrderQty, LeadTime)`."
+What is a system module in Anaplan and why is it important?,"System modules store mappings, flags, constants, and attributes. They are reusable, reduce redundancy, and improve model performance and clarity."
+What is the best way to set up version-controlled planning inputs?,Use DCA with a SYS Version module that defines editable versions. Apply Boolean line item to control input rights per version.
+How to snapshot weekly demand into a persistent line item?,"Use a flag like `IsCurrentWeek`, then: `IF IsCurrentWeek THEN Demand ELSE PREVIOUS(Snapshot)` to persist value over time."
+What is the correct summary for Boolean line items?,Typically set to `None`. Use `Any` only when you need a parent to be flagged if any child is true. Avoid `All` unless logic requires all children to be true.
+How do you detect the first week with zero shipments?,"Use a line item: `IsZero = Shipment = 0`, then: `FirstZero = IsZero AND NOT PREVIOUS(CUMULATE(IsZero)) > 0`."
+What is the correct summary setting for numeric planning line items?,"Set summary to 'SUM' when aggregating over a hierarchy, 'NONE' if it's input-only. Use 'AVERAGE', 'MAX', or 'MIN' as per analytical need."
+How do you manage hierarchical filters in Anaplan UX?,"Create a system module for each hierarchy level with Boolean filters and use them in UX filters. For example, a SYS Location module for L1, L2, L3 filters."
+What is a rolling forecast in Anaplan and how is it built?,"A rolling forecast updates each week/month, always showing a fixed number of future periods. Use LOOKUP or OFFSET based on dynamic current week flags."
+How do you calculate Fill Rate in Anaplan?,"Fill Rate = Fulfilled Orders / Orders Placed. Cap at 100% using `MIN(Fulfilled / Orders, 1)` and guard against divide-by-zero with `IF Orders <> 0 THEN ... ELSE 0`."
+How can we track forecast accuracy in Anaplan?,Forecast Accuracy = 1 - ABS(Actual - Forecast) / Actual. Track per product-location-time and aggregate as needed. Use helper modules for performance.
+How do you create a time range for past 1 year and next 2 years in Anaplan?,"Go to Time Ranges → Create new → Set Past = 1 Year, Future = 2 Years. Use this custom range in modules where extended timeline is needed."
+What is Dynamic Cell Access (DCA) and when to use it?,"DCA restricts read/write access based on Boolean line items. Use for version-specific inputs, user-specific views, or conditional edit rights."
+What is a numbered list in Anaplan and when should it be used?,"A numbered list allows duplicate names and is used for transactional data (like invoices, transactions). Must be managed with display names."
+Why should SELECT be avoided in Anaplan models?,"SELECT hardcodes list items, breaking ALM compatibility and making models rigid. Use LOOKUP or mapping modules instead."
+How can you prevent duplication of logic in large Anaplan models?,"Use centralized system modules, reference line items, and reusable logic to avoid repeating formulas across modules."
+What's the function of MOVINGSUM in Anaplan?,"MOVINGSUM aggregates values across a moving window of time. Syntax: `MOVINGSUM(LineItem, StartOffset, EndOffset, Aggregation)`."
+Can we filter by user in Anaplan?,"Yes, use the 'Users' list as a dimension and create user-specific filter logic. Effective for personalized dashboards and access."
+How to build inventory projection beginning of week logic?,Use: `IF IsCurrentWeek THEN OpeningInventory ELSE PREVIOUS(InventoryProj) + Supply - Demand`. Ensure opening inventory is fetched from correct week.
+What is the best way to import actuals into Anaplan?,"Load into a Data Hub first, filter by subset or condition, and then import into spoke model. Use saved views and avoid importing unnecessary rows."
+What's a good snapshot strategy for Anaplan weekly planning?,"Store current week's data in a snapshot line item, use a Boolean to flag current week, and maintain historic values using `IF THEN ELSE PREVIOUS` logic."
+How to use TIMESUM function in Anaplan?,"TIMESUM aggregates a line item over a time range into a single value. Syntax: `TIMESUM(LineItem)` or `TIMESUM(LineItem, StartPeriod, EndPeriod)`."
+How to compute Net Forecast Error in Anaplan?,Net Forecast Error = Forecast - Actual. Track it at weekly/product-location level and aggregate by category or region as needed.
+What's the difference between Sell-In and Sell-Through?,Sell-In = Units shipped to customer/distributor. Sell-Through = Units actually sold to end customer. Both used in retail/S&OP models.
+How to derive Sell-Through from POS data?,"Load POS data from customer system into Data Hub, map to product/location/time, and aggregate in Anaplan. Apply business rules for exclusions if any."
+Why is my Anaplan import failing with 'Invalid Line Item Identifier'?,"Most likely cause: source line item name changed or mapping is not aligned. Check source saved view, line item names, and format mapping carefully."
+What is the difference between TEXTLIST and TEXT functions?,TEXTLIST aggregates text values across a dimension. TEXT converts number/date/boolean to text. TEXTLIST is not scalable - avoid overuse.
+How to pull historical orders into planning modules?,"Use SUM over a mapping system module if dimensions differ. For example, SUM based on product-location if customer data isn't needed in target."
+What is EOQ and how can it be modeled in Anaplan?,"Economic Order Quantity (EOQ) = sqrt((2 × D × S) / H), where D = demand, S = ordering cost, H = holding cost. Model it in a parameter module."
+Why should time scale be module-driven and not line-item driven in most cases?,"Having consistent time scale across module improves performance, simplifies calculations, and reduces audit complexity."
+"How do you handle unit conversion in Anaplan (e.g., Pallets to Cases)?",Create a system module with conversion rates and use `LineItem / ConversionRate` or `* ConversionRate` based on direction.
+What's the purpose of a 'Mapping' module in Anaplan?,"It holds relationships between lists (e.g., SKU to Category). These mappings power SUM/LOOKUP functions and reduce logic duplication."
+Can we use multi-level hierarchy filters in Anaplan UX?,Yes. Create Booleans in SYS modules at each hierarchy level and apply them in dashboard filters or context selectors.
+What is Time Range mismatch and how to resolve it?,Occurs when line items in formula use different time ranges. Use LOOKUP or align time settings across modules to resolve.
+What are 3 ways to avoid circular references in planning formulas?,1. Use PREVIOUS or OFFSET to break dependency. 2. Split formulas into helper line items. 3. Separate logic into multiple modules.
+How can I do conditional formatting in Anaplan UX?,"Use Boolean or numeric line item as threshold, apply style rules in UX board/card settings under Conditional Formatting."
+What is the benefit of splitting input and calc modules in Anaplan?,"Separating input and calculation modules improves model clarity, enhances auditability, and supports ALM practices."
+How can I sum values from a child list into a parent list in Anaplan?,Ensure the child list rolls up into parent hierarchy and use default SUM aggregation. No formula needed if dimensions are hierarchical.
+How to build a forecast override logic in Anaplan?,Use a formula like: `IF Override? THEN OverrideValue ELSE BaseForecast`. Include DCA to control who can enter override values.
+Why is Anaplan not letting me reference Scenario list item?,Most likely because Scenario list is marked as 'Production Data'. SELECT and direct references to production data lists are disallowed in ALM.
+What is the difference between Line Item Subsets and List Subsets?,"Line Item Subsets are used to group numeric line items across modules. List Subsets are restricted subsets of lists, used for filtering or dimensioning."
+What is the purpose of a boolean flag for 'Is Current Week'?,"Used to drive rolling logic, snapshotting, and dynamic filtering. Set in a SYS Time module and referenced throughout the model."
+How do you calculate inventory turns in Anaplan?,Turns = Cost of Goods Sold (COGS) / Average Inventory. Use TIMESUM for COGS and MOVINGSUM for inventory average if needed.
+Can Anaplan handle lead-time based shifting of values?,Yes. Use POST for future shifts (Order to Receipt) and OFFSET for past shifts (Receipt to Order Date).
+How do I set a default summary for a list-formatted line item in Anaplan?,Default is None. Use 'First non-blank' if you need to pull a selection upward in a hierarchy. Avoid 'SUM' on list-formatted line items.
+What is the use of SELECT: TIME.'All Periods'?,Used to fetch full time summary of a line item. Example: `LineItem[SELECT: TIME.'All Periods']`. Avoid in ALM-sensitive models.
+How can I trace circular reference in a complex model?,"Break the formula, isolate into helper line items, and test backward dependencies one by one. Use PREVIOUS or restructure logic."
+What is the role of a Data Hub in Anaplan architecture?,"Central source for all master data and transactional inputs. Reduces duplication, simplifies data loads, and supports scalable integration."
+What's the best way to handle scenario planning in Anaplan?,"Use a Versions or Scenario list, map key assumptions in SYS module, and drive model logic using LOOKUPs from scenario attributes."
+Can we create time-dependent mappings in Anaplan?,Yes. Use a module dimensioned by list and time. Example: Product-Channel-Time mapping can be modeled via helper module and used in LOOKUP.
+How do I prevent users from editing data outside allowed periods?,"Use a Boolean flag for input-allowed weeks, apply via DCA (Dynamic Cell Access) to restrict edit rights."
+What causes 'Format mismatch' error during lookup?,Occurs when the format of the LOOKUP line item doesn't match the source module's dimension. Ensure mapping format matches source dimension.
+What is a best practice for modeling weekly rolling averages in Anaplan?,"Use MOVINGSUM with dynamic offset range and control logic via SYS Time module. Example: `MOVINGSUM(LineItem, -4, 0, AVERAGE)` for 5-week average."
+How do you model constraint demand plan in Anaplan?,"Constraint Demand = MIN(Supply Available, Demand Forecast). Incorporate cumulative logic and subtract past shipped quantities to prevent double-counting."
+How do I ensure fill rate never exceeds 100%?,"Use `MIN(LineItem1 / LineItem2, 1)`. Include a zero-check: `IF LineItem2 <> 0 THEN MIN(...) ELSE 0` to avoid division error."
+What is a good design to snapshot weekly orders?,"Use Boolean flag for current week, and a formula: `IF Is Current Week THEN Orders ELSE PREVIOUS(Snapshot)` to carry values forward."
+How to use ISFIRSTOCCURRENCE in Anaplan?,"Returns TRUE if the first time the value appears for a dimension. Used in deduplication, or filtering first instance of data."
+What is the benefit of using native Time dimension over custom list?,"Native Time supports built-in functions (CUMULATE, MOVINGSUM, PREVIOUS), aggregation, and calendar alignment - unlike custom lists."
+How do you model Beginning Inventory in Anaplan?,Use opening inventory as input and calculate beginning inventory using: `IF Is Current Week THEN Opening ELSE PREVIOUS(End Inventory)`.
+How to handle product location level override in Anaplan?,Use a separate module at Product-Location level with override flag and value. In calc: `IF Override? THEN Override ELSE Base Forecast`.
+What is cascading filter in UX dashboards?,"Cascading filters dynamically restrict lower-level lists based on upper-level selection (e.g., State → City → Store). Implement using SYS modules and Booleans."
+What does the 'None' summary setting mean in Anaplan?,Means no aggregation will occur across a hierarchy. Use for input-only line items or where you want to block upward summarization.
+How to dynamically show current and next 5 weeks?,Create Boolean flags in SYS Time module using OFFSET and current week flag. Apply filter on module grids using those Booleans.
+What is a good practice for exporting user selections from dashboards?,Store user selection in a module dimensioned by 'Users'. Create export view referencing this selection.
+What is planning lead time and how do you apply it in Anaplan?,"Lead time is the delay between placing and receiving an order. Use POST function to shift values into future: `POST(OrderQty, LeadTime)`."
+What is the use of PREVIOUS vs OFFSET in Anaplan?,"PREVIOUS works only on time dimension and retrieves value from immediate past period. OFFSET can fetch from any relative period, forward or backward."
+What is the difference between historical and snapshot data in Anaplan?,"Historical: Loaded from source system (e.g., sales). Snapshot: Captured manually or via process within Anaplan for tracking internal data state."
+What is a good formula for constrained supply plan?,"Use: `IF FirstWeek THEN Supply ELSE MIN(Forecast, Available Supply - Cumulative Constraint Supply)`. Use helper line items to manage PREVIOUS logic."
+How to calculate TWOS in Anaplan?,TWOS = Inventory / Sell-Through Rolling Average (5-week). Guard with zero-check. Match inventory granularity with sell-through aggregation.
+What is the purpose of SYS modules?,"SYS (System) modules centralize mappings, filters, flags, and constants. They make logic reusable, easy to audit, and modular."
+What is the use of CUMULATE in Anaplan?,"CUMULATE aggregates line item values across time. Use in forward-moving logic like cumulative sales, demand, or supply until current period."
+What's a clean way to implement forecast override in UX?,Use override flag and input line item. Apply DCA for control. Create a calc line item with logic: `IF Flag THEN Override ELSE Forecast` and show that on dashboard.
+What is the purpose of Boolean summary 'ANY'?,"Returns TRUE if at least one underlying item is TRUE. Use when flag needs to be triggered by at least one subordinate (e.g., any active product at site)."
+How to apply parent-child filters on location list in Anaplan?,Create Boolean flags in SYS module based on hierarchy levels. Use filter like: `ParentSelection = PARENT(Location)` to drive lower-level visibility.
+How to handle multiple time ranges in a model?,"Use consistent naming (e.g., '1Y Hist + 2Y FC'), isolate logic by module, and bridge across time ranges using LOOKUP where needed."
+What's the function of TIMESUM with aggregation?,"TIMESUM returns a single value for a line item across a time range. Add aggregation to control result: e.g., `TIMESUM(Sales, Jan, Mar)`."
+What's a safe formula for inventory projection across periods?,`IF IsCurrentWeek THEN Opening ELSE PREVIOUS(InventoryProj) + Supply - Demand`. Ensure initial condition uses correct opening balance.
+What are the categories of Anaplan errors and how to resolve?,Common ones: 1) Circular Reference - split logic; 2) Format Mismatch - check line item formats; 3) Timescale Mismatch - align time settings.
+How to model Allocation % in Anaplan?,"Create base forecast, apply allocation: `Allocated = Base * Allocation %`. Use aggregation level that matches allocation rule (e.g., product-family)."
+What is a good summary setting for Rolling Avg line item?,Use 'NONE' to prevent misaggregation across dimensions. Aggregating a rolling average can distort the value.
+How to structure import action from Data Hub?,Use saved views with filters and minimal columns. Avoid calculated columns. Include only relevant items and filter by subsets or flags.
+What is best way to model return rates in reverse supply chain?,"ReturnRate = Returns / Shipments. Model returns separately, account for lead time back to warehouse, and plan restocking logic accordingly."
+How to create Product-Location based mapping module?,"Use a combination list or intersection list. Build SYS module with mapping line items (e.g., product category, region). Reference in calculations."
+What is the use of POST function in inventory modeling?,"POST shifts values into future - used for simulating arrival of orders based on lead time. E.g., `POST(OrderQty, LeadTime)` for receipts."
+What's the correct format for LOOKUP mapping line item?,"The mapping line item must match the dimension in source module. E.g., if LOOKUP is over Region, mapping line item must be Region formatted."
+How to model a Min Max inventory policy?,Set Min and Max levels in SYS module. Use reorder logic: `IF Inventory < Min THEN Max - Inventory ELSE 0` to trigger replenishment.
+What are inventory driven costs and how to model them?,"Costs that vary with inventory levels - holding cost, stockout cost. Model with cost multipliers: `Inventory * HoldingCostRate`."
+What's a good approach for pipeline visibility in supply chain?,"Track planned vs actual shipments, use POST/LOOKUP for delays, and model visibility windows with filters."
+How to design a dashboard with rolling week filters?,Create a SYS Time module with Booleans for rolling window. Apply that as a filter in UX grid cards to show only recent/future periods.
+What is a 'Versionless' design in Anaplan?,"Avoid using built-in Versions and model scenario/version as a list. Gives better control over logic, memory, and integration."
+How to avoid duplicating cumulative logic across modules?,"Centralize in a helper module with reusable line item (e.g., Cumulative Demand), reference that in other modules via LOOKUP or direct ref."
+Can Anaplan handle multi-echelon inventory modeling?,"Yes. Model each node separately (DC, Plant, Store), pass demand upstream, and simulate replenishment using CUMULATE + POST + lead times."
+What's a common mistake with circular reference in cumulative logic?,Referencing the cumulative output in its own build-up without using PREVIOUS or OFFSET to isolate current from prior. Split logic if needed.
+What is Net Requirements Planning in Anaplan?,"Net Req = Demand - Available Inventory - Planned Receipts. If positive, triggers replenishment. Modeled using IF logic and time shifting."
+What's the role of COALESCE in Anaplan?,Not a native function. Simulated using `IF ISBLANK(A) THEN B ELSE A` to return first non-blank value among options.
+How to model Weekly to Monthly aggregation for KPIs?,"Use native Time scale switch or use TIMESUM with mapping to month. Alternatively, use a SYS Time module that maps weeks to months."
+Why is CUMULATE returning unexpected results?,"Likely due to wrong 'direction' or start flag. Ensure correct settings in CUMULATE: `CUMULATE(LineItem, Direction, ResetFlag)`."
+What is the impact of using too many list-formatted line items?,Increases model size significantly. Optimize by using Boolean flags or codes where applicable. Limit unnecessary use.
+What's the use of the `ISNOTBLANK()` function?,Returns TRUE if value is not blank. Commonly used to validate user inputs or filter populated fields. Format-sensitive.
+What is 'Backward Planning' in supply chain?,"Planning from delivery date backward to determine order placement date, factoring in lead time. Use OFFSET or POST inversely in Anaplan."
+What's the best way to simulate short lead-time operations in Anaplan?,"Use day-level planning if needed, or tight week-level POST/LOOKUPs. Build in order cut-offs and expedite logic."
+What is the difference between 'Sell-In' and 'Sell-Through'?,"Sell-In refers to sales from manufacturer to distributor or retailer. Sell-Through refers to sales from retailer to end customer. In Anaplan, model these separately with appropriate hierarchy."
+How do you calculate Weeks of Supply (WoS) in Anaplan?,WoS = Inventory / Average Demand. Use MOVINGSUM or custom logic to calculate rolling average demand and guard for division by zero.
+What is a good structure for a Scenario Planning module in Anaplan?,"Use a Scenario list instead of Versions. Dimension the module by Scenario, use SYS modules to control scenario-specific overrides, inputs, and visualizations."
+Why should PREVIOUS not be used across non-time dimensions?,PREVIOUS only works with native Time dimension. Use OFFSET for non-time or when needing to move across multiple periods.
+What is the best use of the SELECT function?,"Use SELECT only for fixed references to Top Level items or Versions (e.g., `LineItem[SELECT: Version.Actual]`). Avoid in dynamic logic to prevent hardcoding."
+How to compute Forecast Accuracy in Anaplan?,FA% = 1 - ABS(Forecast - Actual) / Actual. Calculate at lowest grain and then aggregate using weighted average if needed.
+What is 'Effective Dating' and how do you model it?,"Effective Dating tracks when a value becomes valid. Model using a date range, flags like 'Is Effective', or lookup across date validity windows."
+What's a solid approach for Time Range Bridging in Anaplan?,Use SYS Time mapping module with both ranges. Map common keys and use LOOKUPs to bridge values from one range to another.
+How to prevent hardcoding in formulas?,Use system modules and constants instead of fixed values. Replace '13' with `SYS.Constants.WeekCount` for flexibility and maintenance.
+What are best practices for import mapping in Anaplan?,"Use codes over names, filter saved views to minimal scope, and avoid totals. Always test mapping in Dev before production."
+Why should input modules avoid line item subsets?,"LISS add memory overhead and are meant for logic reuse. Input modules should be simple, avoid extra structural complexity for better performance."
+How to model replenishment triggers in a supply chain?,Trigger = IF Inventory < MinStock THEN Order = MaxStock - Inventory. Consider lead time with POST to schedule replenishment.
+What is a Planning Calendar and why is it useful?,"A Planning Calendar maps fiscal and Gregorian dates, week groupings, and seasonal windows. Useful for dashboard labels and custom reporting."
+What's a best practice for DCA in override scenarios?,"Use one Boolean line item for Read and another for Write. Use separate logic to control them. Example: `OverrideEnabled?`, `WriteOverrideAllowed?`."
+What is a strong approach to product hierarchy filtering in UX?,Use SYS modules at each hierarchy level. Link selections via Boolean flags or relationships and filter each grid accordingly.
+How do you model lead time variability?,"Use a line item for Lead Time input, and apply POST based on that value. Include logic to vary lead time based on SKU or location."
+What is demand sensing and can Anaplan model it?,Demand sensing adjusts short-term forecasts based on real-time inputs. Anaplan can simulate this by layering in recent demand signals with override logic.
+How to model lost sales due to stockout in Anaplan?,Create a logic: `IF Demand > Inventory THEN LostSales = Demand - Inventory ELSE 0`. Include aggregation for weekly or monthly impact.
+What is the difference between hard constraint and soft constraint in planning?,"Hard: Cannot be violated (e.g., capacity). Soft: Can be exceeded with penalty (e.g., preference). Use line items to tag and enforce both."
+How to do interpolation between two values in Anaplan?,Use weighted average: `(HighValue - LowValue) * (CurrentX - LowX) / (HighX - LowX) + LowValue`. Requires surrounding reference points.
+Why avoid SELECT with Time?,Using `LineItem[SELECT: TIME.'Jan 24']` hardcodes time and breaks dynamic logic. Prefer LOOKUP or direct reference using SYS Time mapping.
+How to simulate BOM explosion in Anaplan?,Use modules by component and parent item. Use line items like ComponentQty and multiply by Production Plan to compute requirement.
+How to implement alerts in dashboards?,"Use conditional formatting based on thresholds (e.g., Inventory < Min), or build line items with alert messages shown as text."
+What's the advantage of POST over OFFSET?,POST shifts values into the future by an input period count. OFFSET is used to fetch values from another time. POST is used to move data forward; OFFSET can go both ways.
+What is smoothing in forecasting and how to model it?,Smoothing uses weighted averaging over time. Use formula like `0.7 * ThisPeriod + 0.3 * PREVIOUS(AvgForecast)` to implement exponential smoothing.
+What's a good way to model batch constraints?,"Use MOD function to round orders to nearest batch size. E.g., `CEIL(OrderQty / BatchSize) * BatchSize`."
+How do I track unfulfilled demand?,Line item: `IF Demand > Shipments THEN Unfulfilled = Demand - Shipments ELSE 0`. Store and roll over if needed to next period.
+How to model cost of poor forecast accuracy?,Use: `ABS(Forecast - Actual) * CostPerUnitError`. Helps quantify the impact of inaccuracy on business.
+How to prevent division by zero in Anaplan?,Always check denominator: `IF Denominator <> 0 THEN Numerator / Denominator ELSE 0`. Avoids runtime error.
+How to model make-to-order vs make-to-stock flows?,"Tag SKUs by strategy, split demand paths. MTO uses actual demand; MTS uses forecast. Separate modules or logic branches are ideal."
+What is the purpose of LOOKUP in planning modules?,To pull data across dimensions via mapping. Example: pulling Region target into a SKU-level module using SYS mapping.
+How to model promotions impact on demand?,Use Promotion Uplift % line item. Final Demand = Base Forecast * (1 + Promo Uplift %). Add start and end date logic for control.
+What is a capacity constraint in supply planning?,"It limits how much can be produced or supplied. Use MIN(Supply, CapacityAvailable) logic. Include constraint flag if needed."
+What's the difference between ITEM and NAME function?,ITEM returns list-formatted value of current context. NAME returns text name of that list item. Use NAME for matching or display.
+How to build an Anaplan-friendly formula for ROP?,ROP = (AvgDailyDemand * LeadTime) + SafetyStock. Ensure consistent units and scale for time (days vs weeks).
+How to perform ABC classification in Anaplan?,"Rank SKUs by usage or value. Use PERCENTRANK or cumulative % method. Tag A/B/C class with thresholds (e.g., 80/15/5)."
+What is PERCENTRANK and how is it used?,"Used to assign relative percentile rank to values. Example: use for SKU segmentation, service level allocation, or targeting."
+How to model delay buffers in lead time planning?,"Add buffer line item (e.g., +1 week). POST with extended value: `POST(Order, LeadTime + Buffer)`. Supports risk-resilient planning."
+What's the best way to handle decimal to integer conversion?,"Use ROUND, FLOOR, or CEIL depending on need. ROUND(Num, 0) gives nearest integer. CEIL/FLOOR for upward/downward rounding."
+How to build a demand override module with version control?,Use Scenario as a list. Create override input + base forecast. Final = IF Override? THEN Override ELSE Base. Store overrides by version.
+How to implement distribution lead time by region?,"Store region-specific lead times in SYS module. Use LOOKUP by Region in planning logic: `POST(OrderQty, SYS.RegionLeadTime[LOOKUP: Region])`."
+How to model partial allocation based on supply?,"AllocatedQty = MIN(Demand, Supply). Use IF statements to distribute based on hierarchy, fair share, or constraints."
+How to implement period-end snapshot in Anaplan?,Use process with Copy action from input to snapshot module. Use Boolean time flag to restrict action to current week.
+What is push vs pull in supply chain planning?,"Push: Based on forecast, moves inventory ahead. Pull: Based on actual demand. Design modules to show split or simulation."
+What's a robust way to model safety stock dynamically?,SS = Z * STDDEV * SQRT(LeadTime). Model Z value (service level factor) and std deviation per SKU or category.
+What's the best way to model planning buckets (daily/weekly/monthly)?,"Use appropriate Time Range. If hybrid needed, use SYS mapping module to group lower grain to upper (e.g., Week to Month)."
+What is demand latency and how do you model it?,Delay between actual consumption and demand signal registration. Model via OFFSET or POST delay into planning logic.
+What's a good use case for TIMESUM?,"Summing across custom period ranges (e.g., Pre-Season to In-Season). Use in reporting or exception detection logic."
+How to model inter-site transfers?,"Create module with SourceSite, DestSite, SKU. Model orders, in-transit, and receipts using POST and lookup lead time."
+How to simulate pipeline inventory in Anaplan?,Pipeline = Orders sent but not received. Use POSTed value minus actual receipts. Update weekly.
+What's a clean way to model DIO (Days Inventory Outstanding)?,DIO = (Average Inventory / COGS) * Days in Period. Align units and model with rolling average logic if needed.
+What is a good approach for dual-sourcing logic?,Tag sources by priority. Allocate demand across them via ratios or constraints. Use capacity flags and selector logic.
+How to model item rationalization impact?,Tag SKUs with Rationalized flag. Zero out demand and supply flows downstream. Filter out in dashboards or reporting.
+What is WoS delta and how is it calculated?,WoS Delta = Projected WoS - Target WoS (TWOS). Helps highlight risk of under- or over-stocking. Use separate line items for both and subtract.
+How to model fill rate in Anaplan?,"Fill Rate = Fulfilled Orders / Orders Placed. For future, use Shipment Plan; for past, use Actual Receipts. Cap at 1 and guard for zero denominator."
+What does POST function do in Anaplan?,"POST moves a value forward in time by a defined offset. Often used for modeling lead times: `POST(Order, LeadTime)`."
+How to use RANK function in SKU segmentation?,"RANK SKUs by Revenue, Cost, or Forecast Error. Use `RANK(Value, DESCENDING, SEQUENTIAL)` to classify ABC segments or exceptions."
+What is the difference between cumulative demand and rolling demand?,Cumulative demand adds up all demand from the start; rolling demand sums over a moving window. Use CUMULATE vs MOVINGSUM respectively.
+What are key constraints in constrained planning?,"Supply Constraints: Capacity, Inventory. Demand Constraints: Commitments, Prioritization. Use MIN logic or IF flag switches."
+How to model shipment priority in Anaplan?,"Assign priority scores or tags to customers/orders. Allocate supply accordingly using sorting, ranking, or IF-THEN logic."
+What is backorder logic in Anaplan?,Backorder = Demand - Fulfilled Qty. Store as a line item and allow POST to carry it to next period if needed.
+How can you identify circular references?,Circular references happen when a line item indirectly depends on itself. Use OFFSET/POST + helper line items to break loops.
+How to calculate inventory turns in Anaplan?,Inventory Turns = COGS / Average Inventory. Use rolling demand as proxy for COGS. Express as annualized if using weekly/monthly data.
+How to simulate push vs pull inventory logic?,Push: Use forecast to create orders (planned demand). Pull: Use actual sales/consumption. Design both flows and compare results.
+How to flag first non-zero value in Anaplan?,Use: `IF Value <> 0 AND PREVIOUS(CumulativeFlag) = 0 THEN TRUE ELSE FALSE`. CUMULATE + condition isolates first occurrence.
+How to model lead time-based snapshots?,Create a system module with IsCurrentWeek? flag. Use POST or OFFSET to snapshot current data into future-pulled line item.
+How to calculate safety stock from service level?,"Safety Stock = Z * STDDEV(Demand) * SQRT(LeadTime). Store Z for each service level (e.g., 1.64 for 95%)."
+How to simulate sourcing switch in constrained supply?,"Use selector Boolean per source (Vendor A, Vendor B). Use IF statements with capacity logic to dynamically shift allocations."
+How to calculate projected inventory in Anaplan?,Inventory(Beginning) + Supply - Demand = Inventory(End). Loop forward week by week using PREVIOUS or helper line items.
+What's a best practice for offset logic in rolling projections?,Use OFFSET only with numeric line items and guard using IF ISBLANK or ISNOTBLANK. Use for prior or future period alignment.
+What is Z in safety stock formula?,"Z is the Z-score associated with desired service level. E.g., Z=1.64 for 95%, 2.06 for 98%. Multiply with std dev of demand."
+What's the difference between standard deviation and MAD in forecast error?,"STDDEV penalizes large errors more (quadratic), while MAD is linear. MAD is often used in supply chain for robustness."
+How to use MOVINGSUM for rolling averages?,"MOVINGSUM(LineItem, -N + 1, 0) / N gives rolling average for N periods. Handle edge weeks using IF-THEN for available periods."
+How to identify understock situations?,Use `IF Inventory < MinStock THEN TRUE`. Can create alert line items or colored indicators in dashboards.
+What's a good dashboard filter structure?,"Create separate SYS modules for each dimension (Time, LOB, Scenario). Use Boolean selectors and apply filters in UX pages."
+What's a common cause of 'timescale mismatch' error?,"Formula refers to a line item with different time scale (e.g., Month vs Week). Use TIME mapping modules or adjust formula scope."
+How to perform supply fair share logic?,Calculate Total Demand and Available Supply. Distribute proportionally: `Demand / Total Demand * Supply`. Ensure capped allocation.
+What is the right summary for WoS metrics?,Use 'NONE' for time summary and 'Average' or 'Min' at higher hierarchy levels. Prevent aggregation of ratios unless weighted.
+How to use LINEITEM SELECTOR in Anaplan UX?,Create LISS (Line Item Subset) and build a selector line item. Use that in UX page as filter for dynamic grid display.
+Why use Version as a list instead of native Versions?,"Gives flexibility for custom logic, selective access, and easy UX filtering. Native Versions add memory and are more rigid."
+How to implement min/max inventory constraints?,Use `IF Inventory < Min THEN Order = Min - Inventory`. Also `IF Inventory > Max THEN Cancel = Inventory - Max`.
+What's the role of CUMULATE in constrained demand?,Accumulates shipped quantities to compare against cumulative demand. Helps avoid over-shipment across periods.
+What's the logic for 5-week rolling WoS?,Inventory / Average of last 5 weeks of demand. Use MOVINGSUM to calculate average. Handle first 4 weeks separately.
+What's the difference between LOOKUP and SUM?,LOOKUP pulls one-to-one using mapping. SUM aggregates many-to-one across dimensions. Use based on directional need.
+How to model aging inventory?,Track InventoryAge per lot or batch. Use line items to increment age weekly. Flag items older than threshold for action.
+What's the formula for reorder quantity?,OrderQty = MaxStock - CurrentInventory. May also include forecast adjustment or min order size rounding.
+How to model fill rate over multiple periods?,Use: SUM(Fulfilled) / SUM(Demand) over period range. Use TIMESELECTED or TIMESUM or aggregation module.
+How to use user selectors in UX?,Create user-specific filter module (dimensioned by Users). Use those flags in page selectors and dynamic filters.
+What is the 'Not Applicable' strategy in hierarchy design?,"Add a 'Not Applicable' item to each list (Location, Channel) to handle default or unmatched scenarios."
+How to do inventory aging in batches?,Create batch ID list or use timestamps. Calculate difference between Today and ReceiptDate. Classify by age buckets.
+What's the logic behind capacity leveling?,Spread total demand across time considering available capacity. Use IF Supply < Capacity THEN Supply ELSE Delay logic.
+What is a good use of RANKCUMULATE?,"Used in allocation problems where you need to assign quantities cumulatively up to a cap (e.g., max capacity)."
+What are snapshot modules and when to use them?,"Store point-in-time data like forecast, orders, etc. Use Copy actions to preserve state. Essential for version-free analysis."
+What's a robust way to model lead time variability?,"Use multiple lead time values (Min, Max, Avg) and simulate risk scenarios using SELECTED VALUE or randomizer input."
+What is pegging in Anaplan context?,Manual or logic-based allocation of supply to demand. Helps with traceability of which demand caused which order.
+How to simulate shortage allocation by priority?,"Sort customers or SKUs by priority. Allocate supply using MIN(SupplyAvailable, Demand) until supply exhausted."
+What is meant by 'one version always active' strategy?,Use SYS Version module to flag Active Version. Use SELECTED logic or filtering to show only active plan in dashboards.
+What's the simplest way to count number of SKUs with zero forecast?,"Create Boolean: `Forecast = 0`, then use `SUM` or `COUNT` over that Boolean to count."
+What is constrained WoS and how is it calculated?,"WoS = Inventory / Constrained Demand. Use constrained demand in denominator, not unconstrained or forecast."
+How to model staggered replenishment?,"Use condition like `IF MOD(WEEK(TIMESTAMP), X) = 0 THEN Order ELSE 0`. Helps simulate interval ordering."
+What's a good way to model 'last 13 weeks' logic?,Use SYS Time module with Week Number and Quarter logic. Create rolling 13-week window with offset ranges.
+What is base stock policy?,Always maintain a fixed level of stock (BaseStock). Each order replenishes gap between Base and Current Inventory.
+How to prevent negative inventory in projections?,"Use `MAX(0, ProjectedInventory)` or cap logic. Optional alerts for negative projections before applying cap."
+How to simulate alternative BOM scenarios?,Create versions of BOM or use Boolean selectors for Alternate BOM logic. Helps simulate sourcing or cost optimization.
+What's the approach to build custom time rollups?,"Use SYS module to map custom periods (e.g., Pre-Season, Season). Aggregate values manually using Boolean filters or TIMESELECTED."
+What's the purpose of dynamic cell access in snapshots?,DCA hides or locks historical data while allowing current week edits. Prevents retro changes to frozen snapshots.
+How to structure an Anaplan data hub?,"Keep it flat, clean, and dimensionally optimized. Use raw staging modules for imports, then transform to structured views for spoke models using Saved Views or export modules."
+What is the use of Line Item Subsets (LISS)?,"LISS allows you to treat selected line items as list members. Use in reporting, filtering, or for aggregation across measures."
+How to create a weekly to monthly mapping?,Create a SYS Time module with both week and month time scales. Use LOOKUP or mapping line items to bridge between them.
+How to forecast with causal drivers?,"Use regression logic or correlation ranking between demand and external factors like weather, promotions, etc. Create influence weights and apply to base demand."
+Why is Anaplan better than Excel for planning?,"It enables real-time collaboration, audit trail, version control, dimensional scaling, and centralized logic - all while eliminating Excel fragility."
+What is scenario planning and how is it enabled in Anaplan?,"Scenarios can be modeled using list-based dimensions (Scenario List). Use SELECTED flags, apply filters, or structure scenario selector modules in dashboards."
+What is the use of Dynamic Cell Access (DCA)?,"DCA restricts read/write access based on Boolean drivers. Use for version control, snapshots, security, or UX-friendly editing experience."
+How does SELECT work in Anaplan?,SELECT is used to reference a specific item from a list or hierarchy. Use sparingly as it breaks model flexibility and often fails with selective access.
+How to prevent SELECT misuse?,"Avoid SELECT on dynamic dimensions (like Versions, Time, User). Prefer LOOKUP or conditional logic using Boolean selectors or system modules."
+How to model expired stock logic?,Use Inventory Age and max shelf-life. Flag `IF Age > Expiry THEN TRUE`. Adjust projections accordingly or auto-deplete from inventory.
+What is consensus forecasting?,"A demand plan agreed upon by multiple stakeholders - Sales, Marketing, Finance. Anaplan enables this via user selectors, versions, or scenario overlays."
+How to apply capacity override in constrained plan?,Add Capacity Override input line item. Use `IF Override THEN OverrideValue ELSE CalculatedCapacity` logic in final constraint calculation.
+How to use ISFIRSTOCCURRENCE function?,"Flags the first time a list item occurs in a dimension. Useful for deduplication, rank-1 logic, or initial assignment conditions."
+What is meant by PLAN IQ in Anaplan?,PlanIQ is Anaplan's native AI-based forecasting engine. Uses Amazon Forecast in backend. Ideal for univariate time-series prediction tasks.
+What is a typical top-down planning logic?,"Start with global or region-level forecast, then allocate to products or customers based on weights, historical split, or targets."
+What is bottom-up planning in Anaplan?,Start at SKU/Customer level and roll up using native hierarchy. Ensure granularity is not too sparse for practical use.
+How do you capture manual forecast overrides?,Use separate line item for override input. Final forecast = `IF Override THEN Override ELSE StatisticalForecast`. Use Boolean or ISNOTBLANK.
+What is multi-echelon inventory planning?,"Accounts for multiple layers (DCs, Plants, Warehouses). Optimizes overall network inventory, not just local reorder points. Requires lead time and routing visibility."
+What is mean absolute percentage error (MAPE)?,MAPE = ABS(Forecast - Actual) / Actual. Good for comparing forecast quality across SKUs. Handle divide-by-zero cases carefully.
+What is the role of Time Ranges in Anaplan?,"Time Ranges limit a module's time scope, improving performance and memory. Avoid using model calendar for all modules."
+What is a good way to manage time selectors in dashboards?,Use SYS Time module with user-specific Boolean selectors. Enable dynamic filtering of views and charts by current user.
+How to model fill rate in case of lead time?,"Use POST(Orders, LeadTime) and compare with Shipment Plan or Receipts. Align demand and supply to correct week offset."
+How to use AGENTS in supply chain planning?,"Agents simulate decision rules. In Anaplan, design agent-based logic using IF-THEN, Boolean triggers, or rule tables."
+What is implied service level?,Service Level = Probability that inventory is sufficient to meet demand. High SL requires more SS. Use Z-score based safety stock logic.
+What is forecast consumption?,"As actual orders arrive, reduce forecast by that amount. Use `MIN(Forecast, Actual Order)` and adjust future demand accordingly."
+What is meant by static vs dynamic sourcing?,"Static sourcing always assigns one fixed source per product. Dynamic allows sourcing based on availability, capacity, or cost logic."
+How to align versions between modules?,Use SYS Version module. Create mapping line items and LOOKUP to pull from matching version across modules.
+What is a good testing strategy in model building?,"Unit test line items, build test modules, simulate boundary cases. Tag all assumptions and edge case flags."
+What is production list in Anaplan?,Lists marked as Production can be edited in Deployed Mode (Prod). Non-prod lists cannot be changed post-deployment. Use subsets smartly.
+What is the difference between Reorder Point and Reorder Quantity?,ROP tells when to reorder. RQ tells how much to reorder. ROP = SS + Demand during Lead Time. RQ = Target - Current Inventory.
+How to model pipeline inventory in Anaplan?,"Pipeline = Orders placed but not yet received. Use POST(Orders, LeadTime) - Receipts to simulate pipeline."
+"What is the meaning of CUMULATE(LineItem, FALSE, List)?","Cumulative sum across a list instead of time. Useful when time is not a dimension (e.g., stages, periods)."
+What is a good summary setting for error metrics like MAPE or RMSE?,"Set Summary: NONE for Time. Use Min, Max, or Avg for list hierarchy. Weighted average if required with volume weight."
+How to simulate seasonal uplift in Anaplan?,"Create Seasonality Index (e.g., by week or month). Multiply base forecast with index. Normalize index to average = 1."
+What is allocation logic in constrained planning?,Distribute available supply across demands proportionally or based on priority. Use IF-THEN or RANK-based allocation.
+What is meant by pegging logic in Anaplan?,"Pegging = Mapping of supply back to demand (or vice versa). Use allocation tables, order ID references, or batch-level mapping."
+How to simulate forecast bias?,Bias = Forecast - Actual. Positive = overforecast. Negative = underforecast. Track moving bias per SKU and adjust forecasts.
+What is frozen period logic?,Freeze certain past or near-term weeks from being overwritten. Use DCA or conditionally lock formulas during these weeks.
+What's the difference between POST and OFFSET in Anaplan?,POST pushes values forward over time (adds to target). OFFSET fetches from earlier/later period (overwrites). Use POST for accumulation.
+What is ABC XYZ classification in supply chain?,ABC = Revenue/Cost-based classification. XYZ = Forecastability. Use RANK + STDDEV or CV (Coefficient of Variation) logic to group SKUs.
+What is the role of Data Tags or Meta Flags in modeling?,"Use Booleans or tags to categorize SKUs, Locations, etc. Useful for filtering, exception reports, and segmented analysis."
+What is the ideal way to model sourcing calendars?,Use a SYS Week module with sourcing availability flags. Use `IF Available THEN Source ELSE 0`. Helps simulate sourcing windows.
+What is the correct use of SYS modules?,"System modules store properties, mappings, flags. Should not be calculated heavy. Centralized for reuse across modules."
+What is prebuild vs postbuild logic in snapshots?,Prebuild = Input copied into snapshot. Postbuild = Calculated fields derived post snapshot. Keep both separate for audit and freeze.
+What is the use of NEXT and PREVIOUS in inventory aging?,"Use `NEXT(Age)` or `PREVIOUS(Age)` to simulate weekly aging of lots. Helps track expiry, obsolescence, and FIFO flow."
+How to test scenario logic dynamically?,Create scenario switcher. Compare Base vs Optimistic vs Worst Case. Use separate scenario modules or versioned logic with filters.
+How to model minimum order quantity in Anaplan?,"OrderQty = `MAX(MOQ, TargetQty)`. Apply rounding logic if needed. Helps align system outputs with vendor constraints."
+What is Anaplan Optimizer and when to use it?,"Used for solving linear optimization problems (e.g., transportation, sourcing). Write objective function and constraints. Requires Optimizer license."
+What is preferred: TEXT or CODE as mapping key?,"Use CODE for better performance, especially in large models. Avoid TEXT when possible. CODE is unique and indexable."
+How to simulate order batching every N weeks?,"Use MOD(WEEKNUM, N) = 0 to trigger ordering weeks. Combine with logic to hold demand till order week arrives."
+How to simulate customer segmentation-based planning?,"Add Customer Segment as a dimension or attribute. Use separate rules, targets, and allocation logic per segment."
+How to model exception alerting in dashboards?,Use flags: `IF Metric > Threshold THEN TRUE`. Color code the flags. Use UX conditional formatting to show alerts.
+How to handle NULL or blank values in Anaplan?,Use ISBLANK() function. Avoid calculations on blanks. For text: `IF ISBLANK(Text) THEN Default`. For numbers: guard with IF.
+What is the function of 'ANY' summary in Booleans?,"Returns TRUE if any child Boolean is TRUE. Useful for flags in hierarchy, rollup alerts, or partial completion."
+How to track demand fill rate by channel or region?,Add Channel or Region dimension. Use `SUM(FilledQty) / SUM(Demand)` per slice. Create summary dashboard per dimension.
+How to model one-time promotion demand?,Use Promotion Flag. Add incremental uplift for promotion weeks. Keep base forecast separate from promo-adjusted forecast.
+How to aggregate time-series data by month?,Use TIME scale change (week to month) or create mapping in SYS module. Use SUM or MOVINGSUM with appropriate alignment.
+How to simulate product substitution logic?,"Create substitution mapping. If Item A = 0 and SubA Available, then fulfill with SubA. Helps during shortages."
+How to simulate reverse logistics in supply chain?,"Create a Return module with return flags, quantities, and reason codes. Map to upstream flows. Aggregate returns by product/customer and net off inventory projections."
+What is the best way to track late orders in Anaplan?,Use `IF Receipt Week > Requested Week THEN TRUE`. Calculate delay = Receipt Week - Order Week. Summarize delays by SKU/customer.
+How to model order aging?,"Assign weeks since order date to each order. Use `Age = CurrentWeek - OrderWeek`. Segment into buckets (0-1 wk, 1-2 wks, etc.) for visibility."
+What is a digital twin in Anaplan terms?,"A digital replica of physical planning logic. Simulate scenarios, test outcomes. In Anaplan: build rule-based models that reflect supply chain flows."
+How to simulate vendor lead time variability?,"Use historical lead time range (Min, Max, Avg). Create logic: `IF Randomizer THEN Max ELSE Avg`. Helps simulate risk-aware planning."
+How to track on-time in-full (OTIF)?,"OTIF = Orders delivered on time AND in full / Total Orders. Use two Booleans (On Time, In Full). Multiply and average for OTIF %."
+What is inventory carrying cost and how to model it?,"Cost of holding inventory = Inventory * Carrying Rate (%). Apply weekly/monthly, depending on time scale. Helps in cost-to-serve models."
+How to model partial delivery scenarios?,"Track ordered qty vs delivered qty. If Delivered < Ordered, mark as Partial. Use Fill Rate logic and apply reason codes if needed."
+What is the role of freight cost modeling in Anaplan?,"Freight = Volume * Rate (per unit/distance). Use freight zones, lanes, and vehicle types to calculate total freight cost per order/region."
+How to model lead time based on vendor or location?,Create SYS Vendor or SYS Location module. Store lead time. Use LOOKUP to pull lead time dynamically into planning modules.
+What are inventory turns and how are they calculated?,"Turns = Annual Demand / Avg Inventory. In Anaplan, use: `SUM(Demand over year) / AVERAGE(Inventory)`. Higher turns = more efficient."
+What is base-safety cycle logic in supply planning?,"Split demand into Base (normal) and Safety (buffer). Plan base via forecast, and safety using SS rules. Add both in total supply plan."
+How to flag shortfall in constrained plans?,Shortfall = Demand - Supply. IF Supply < Demand THEN TRUE. Helps identify gaps and support escalation or alternate sourcing.
+What is time-phased planning?,"Plan is broken into weekly/monthly buckets. Allows visibility across horizon. In Anaplan, each time period is a column, making time-phased logic native."
+How to handle zero demand weeks in planning?,Use IF Demand > 0 THEN Plan ELSE 0. Avoid over-planning. Flag consecutive zeros to highlight discontinued SKUs or inactive customers.
+What are fill rate types?,"Order Fill Rate, Line Fill Rate, Case Fill Rate. Order fill: entire order met. Line fill: line item met. Case fill: % of order qty filled."
+What is the meaning of perfect order?,"Order that is delivered on time, in full, with correct invoice and undamaged. KPI = % of perfect orders vs total orders."
+What is pipeline fill rate?,Rate at which pipeline orders are fulfilled. Includes open POs and in-transit inventory. Often measured by aging or backlog resolution speed.
+How to calculate average lead time?,"Use: `SUM(Actual Receipt Date - Order Date) / Number of Orders`. In Anaplan, track historical order/receipt pairs with DATE-formatted line items."
+What is mode shift planning?,"Deciding between air, sea, rail, etc., based on urgency and cost. In Anaplan: build logic to flag orders eligible for alternate modes."
+How to handle products with variable unit of measure?,"Normalize all quantities to base UOM (e.g., eaches). Convert as needed using UOM conversion tables in SYS module."
+What is demand shaping?,"Actively influencing demand using pricing, promotions, or availability. In Anaplan: model uplifts, cannibalization, and promo effectiveness."
+What is cannibalization logic in forecasting?,"When promo of one product reduces demand for another. Model via ratio or offset logic. E.g., `Forecast B = Forecast B - % of Promo A Uplift`."
+How to create cross-SKU planning logic?,Use mapping modules to relate Product A to B. Use SUM and LOOKUP based on the mapping to influence plans or transfer logic.
+How to simulate scenario-driven pricing?,"Use a Scenario list, with price tables per scenario. Reference via LOOKUP from selector. Allows margin simulations across pricing strategies."
+How to model bill of materials (BOM) in Anaplan?,"Create BOM module with Parent, Component, and Quantity. Use SUM to roll up component demand based on finished goods forecast."
+How to forecast with multi-source inputs?,"Build separate forecast modules (Statistical, Sales, Marketing). Combine using weights or override rules. Track source confidence if needed."
+How to deal with obsolete inventory?,Flag items with no demand over N weeks. Adjust projections. Use logic: `IF Demand = 0 for 13+ weeks THEN Mark as Obsolete`.
+How to plan shelf-life sensitive products?,"Track inventory age, shelf life, expiry weeks. Use FIFO logic and flag expiring lots. Plan disposal or discounting if needed."
+How to simulate phased product launch?,Create launch week flags. Demand = 0 before launch. Apply ramp-up % for initial weeks. Can also model distribution rollout separately.
+What is horizon-based planning?,"Different rules for different time horizons. Near term = constrained, Mid = capacity checked, Long = unconstrained. In Anaplan, use time filters and SWITCH logic."
+How to model minimum shelf life at receipt?,"For inbound items, enforce: `Receipt Week ≤ Expiry Week - MinShelfWeeks`. Helps align procurement with compliance."
+What is the Coefficient of Variation (CV) in demand planning?,CV = STDDEV / Mean. Measures demand variability. High CV = unpredictable SKUs. Helps in classifying XYZ or safety stock tuning.
+How to plan for Black Swan events?,Build What-If logic. Model with shock multipliers or override inputs. Use scenario switches and document all assumptions.
+What is lot-for-lot ordering?,"Order exactly as needed, no extra. Reorder quantity = Net Requirement. Reduces holding cost but increases order frequency."
+How to model economic order quantity (EOQ)?,EOQ = sqrt((2 * Demand * OrderCost) / HoldingCost). Use this to suggest reorder quantities. Static unless costs or demand change.
+How to model multi-sourcing risk logic?,"If Primary Source = Fail, then use Secondary. Create fallback rules and triggers. Use SWITCH or RANK-based fallback logic."
+How to show coverage days dynamically?,"Coverage = Inventory / Avg Demand per Day. In Anaplan, convert week demand to daily, or use custom buckets with rolling averages."
+How to create source-of-truth flags?,Use Boolean `Is Source` flags in mapping modules. Centralize in SYS modules to ensure only one source is used at a time.
+What is delay propagation logic?,Delays upstream affect downstream plans. In Anaplan: POST delay flags or push impact weeks via lead time chains.
+What is touchless planning?,Minimal manual intervention. System handles planning based on logic and thresholds. Requires robust automation and exception handling.
+What is forecast value add (FVA)?,FVA = Forecast Accuracy (Statistical) vs (Manual). Shows which team/process improves or degrades forecast. Helps justify human overrides.
+What is push vs pull strategy?,"Push: Forecast-driven (e.g., make to stock). Pull: Order-driven (make to order). Anaplan can simulate both via scenario models."
+How to simulate material availability constraints?,"Use inventory + in-transit + orders. If < required quantity, constrain plan. Add shortages and flag critical SKUs."
+How to do automated gap analysis in plans?,"Compare Plan vs Target. Gap = Target - Plan. Flag if gap > threshold. Aggregate by owner, region, or SKU."
+How to model capacity buckets?,Define capacity per week or resource. Use SUM(Planned Load) vs Capacity. Use Boolean flag if overload occurs.
+How to model rolling budget?,"Use LOOKUPs with rolling offset. For example, `OFFSET(Prior Budget, -12)` gives rolling YTD or trailing budget alignment."
+What is pull-through logic in allocation?,"If SKU A is unavailable, pull allocation to SKU B. Or future to current period. Needs mapping and override logic."
+What is the concept of E2E Visibility in Anaplan?,End-to-end visibility means all supply chain stages (source to customer) are visible in one model. Achieved by combining flows and using drilldowns.
+How to ensure version-controlled input override?,Allow manual input only for selected version. Use DCA or `IF Version = 'Override' THEN Input ELSE Blank` logic.
+How to model blackout weeks in supply planning?,"Flag weeks as Blackout = TRUE. In supply plan, `IF Blackout THEN 0 ELSE PlanQty`. Blocks orders in those periods."
+What is bullwhip effect and how to model it?,"Small demand changes amplify upstream. Model via demand variance, lead time, and safety stock interactions. Show impact by layer."
+How to model backorder recovery logic?,Backorder = Unfulfilled Orders. POST forward based on capacity. Use: `Backlog This Week + Unfilled = Recovery Plan`.
+What is lead time bias in forecasting?,Over-accounting for lead time causes overstocking. Align forecast cut-offs to lead time horizon. Validate forecast aging logic.
+How to model container fill rate or truck utilization?,Utilization = Used Volume / Max Volume. Track per shipment. Model pack sizes and constraints to optimize load.
+How to avoid circular reference in inventory logic?,"Use OFFSET or PREVIOUS instead of referencing future periods. Split line items (e.g., Inventory Projected vs Inventory Consumed)."
+How to model material substitution logic?,"If Material A = 0, and Sub Material B exists, then allocate demand to B. Requires mapping table and override rules."
+How to model demand drop catch-up?,"If demand drops, and later recovers, show recovery plan as demand gap over next few periods. Use flags and POST or spreading logic."
+How to build a rolling 5-week average for demand?,"Use: `AVERAGE(OFFSET(Demand, -1, 0), OFFSET(Demand, -2, 0), ..., OFFSET(Demand, -5, 0))`. This creates a rolling backward-looking average."
+How to show first non-zero demand week?,Use a Boolean: `Demand <> 0`. Then use RANK or ISFIRSTOCCURRENCE over time to identify the first true instance.
+How to build exception reports in Anaplan?,"Use conditional logic to flag anomalies (e.g., `Demand > Forecast * 1.2`). Aggregate Booleans for summary dashboarding."
+What is slow-moving inventory and how to detect it?,Inventory with low or no demand over a period. Flag SKUs with `Sales = 0 for N weeks`. Helps identify write-offs or reallocation.
+How to use PREVIOUS with time-based cumulation?,`IF NOT IsFirstWeek THEN PREVIOUS(Value) + CurrentWeekValue`. Avoids circularity compared to CUMULATE in complex formulas.
+How to build demand classification: ABC/XYZ?,A: High revenue; B: Medium; C: Low. X: Stable; Y: Moderate; Z: Erratic. Use Revenue and CV to classify. Store as attributes.
+How to model forecast override approval workflow?,Use two modules: Input and Approval. Store override separately. Approved override = `IF Approved THEN Override ELSE Forecast`.
+How to create a rolling reset every 13 weeks?,Create a SYS Time module with Quarter mapping. Reset cumulative logic every quarter using `IF IsFirstWeekOfQuarter THEN Base ELSE ...`.
+How to handle returns in fill rate calculations?,Use: `Net Shipped = Shipped - Returns`. Fill Rate = Net Shipped / Orders. Ensure returns are time-aligned with original order.
+How to simulate inventory aging buckets?,"Track inventory receipts by week. Use OFFSET and sum by age: 0-4 weeks, 5-8 weeks, etc. Helps monitor shelf life and obsolescence."
+How to manage week-to-month conversion?,"Create a SYS mapping: Week → Month. Use SUM by that mapping to aggregate. For monthly reports, aggregate all weekly values accordingly."
+How to build Product Lifecycle Stages in Anaplan?,"Store lifecycle stage (e.g., New, Mature, Phase-out) in SYS module. Filter logic and planning rules based on stage."
+What is forecast lag and how to calculate it?,Lag is delay between forecast creation and usage. Track forecast version date vs actual usage date. Use to measure responsiveness.
+What is demand uplift and how to model it?,Uplift = % increase due to event/promotion. Adjusted Demand = Base Forecast * (1 + Uplift %). Track promotion weeks explicitly.
+How to perform forecast value segmentation?,"Segment SKUs by forecastability. Use historical accuracy or CV to classify into Easy, Moderate, Hard-to-forecast. Tune models accordingly."
+How to model constrained forecast?,"Apply maximum supply or capacity limits. Constrained Forecast = `MIN(Forecast, SupplyLimit)`. Helps in realistic planning."
+What is baseline forecast vs consensus forecast?,Baseline = System-generated (statistical). Consensus = Collaborative forecast with overrides. Model both separately and compare.
+How to simulate VMI (Vendor Managed Inventory)?,"Create shared visibility modules. Vendor sees demand, stock. Logic adjusts reorder signals from vendor side. Track SLA compliance."
+How to show fill rate by priority class?,"Segment orders into classes (e.g., A, B, C). Calculate fill rate separately per class: `Shipped A / Ordered A`, etc."
+How to create capacity pooling logic?,"If multiple lines share capacity, build one pool module. Allocate load by priority or volume share. Use RANK or % allocation logic."
+How to model push orders for pipeline filling?,Create override flag: `Push Order = TRUE`. Add push qty to normal plan. Useful to fill underutilized legs in transport.
+How to model allocations across customers?,Total Supply = X. Allocate across customers using weight or priority. Allocation = `Total * CustomerWeight / SUM(Weights)`.
+What is a good formula for WoS in Anaplan?,`Inventory / Rolling Average of Demand over 5 Weeks`. Use helper line item for rolling average to avoid circular references.
+How to model override logic without circularity?,"Split into multiple line items: 1) Original, 2) Override, 3) Final = `IF Override <> BLANK THEN Override ELSE Original`."
+How to ensure first-time-right inventory formula?,"Use PREVIOUS for time-driven logic, avoid CUMULATE where possible. Use OFFSET if crossing dimensions. Guard for circular refs."
+How to store snapshot of current week values?,Use Snapshot module with `IF IsCurrentWeek THEN Value ELSE PREVIOUS(Snapshot)`. Store once and freeze for later reference.
+What is allocation delta in supply planning?,Delta = Allocation - Original Request. Helps identify unmet or excess allocation. Useful for rescheduling or escalation.
+How to simulate seasonal curves?,Store % weight per week in SYS Time. Apply to annual demand: `Total Demand * Weekly Weight`. Helps spread volume seasonally.
+How to enable user-defined freeze in planning?,"Use Boolean `Is Frozen`. If TRUE, lock value: `IF Frozen THEN PREVIOUS(Value) ELSE Input`. Protects against overrides."
+How to calculate forecast accuracy with MAPE?,MAPE = AVERAGE(ABS(Forecast - Actual) / Actual). Track by SKU/region. Use to tune forecast models.
+How to model expected shortfall?,"Shortfall = `MAX(0, Demand - Supply)`. Cumulative shortfall = running total. Use to track unmet needs."
+What is ATP (Available to Promise)?,ATP = Inventory + Receipts - Allocated Orders. Track what's available for new demand. Use to trigger backorders or expedite.
+What is backward scheduling in supply chain?,"Start from due date, subtract lead times backward to calculate required start. Use OFFSET and lead time logic to simulate."
+How to enforce MOQ in procurement plan?,IF Net Req < MOQ THEN Order = MOQ ELSE Order = Net Req. Helps align with supplier constraints.
+What is fill rate vs service level?,Fill rate = % of demand fulfilled. Service level = % of time inventory available. Not always equal. Both are critical KPIs.
+How to manage phase-in / phase-out SKUs?,"Use phase flags in SYS module. Phase-in: ramp demand. Phase-out: reduce orders, allow runout. Track overlap SKUs if replacement exists."
+How to model purchase price variance (PPV)?,PPV = Standard Price - Actual Price. Multiply by volume. Helps track procurement performance vs budget.
+How to apply FIFO in inventory planning?,Track receipts by week. Fulfill oldest first. Use RANK by receipt week. Subtract demand iteratively from oldest lots.
+How to manage buffer stock logic?,Buffer = Base + Safety. Base = normal demand; Safety = protection. Use separately to adjust responsiveness.
+What is pegging logic in planning?,"Match supply orders to specific demand. In Anaplan, use mapping modules or detailed ID linking to simulate pegging."
+How to flag week when demand exceeds supply?,`IF Supply < Demand THEN TRUE`. Rank time periods to flag first breach. Useful for proactive escalation.
+How to calculate inventory coverage days?,Coverage = (Inventory / Daily Demand). Convert weekly demand to daily using `/ 7`. Useful for dynamic reordering.
+How to simulate alternate bill-of-materials (BOM)?,Store multiple BOMs. Use selector or condition to activate one. Useful for region-specific or vendor-specific configurations.
+What is anomaly detection in demand planning?,Flag extreme values using STDDEV. `IF ABS(Demand - Mean) > 2*STDDEV THEN Anomaly`. Helps clean forecast input.
+What is bias in forecast and how to calculate?,Bias = Forecast - Actual. Positive = Over-forecast. Negative = Under-forecast. Track over time to reduce planning error.
+How to model cascading constraints?,"Layered logic: Vendor Cap → Warehouse Cap → Vehicle Cap. At each stage, restrict flow. Helps simulate real-world bottlenecks."
+What is dummy week and why is it used?,"Placeholder week to handle logic edges (e.g., for `PREVIOUS`). Prevents circular refs or nulls in time logic."
+How to integrate event planning with forecast?,Store event flags. Add event uplift to base: `Final = Base + (Base * EventImpact%)`. Allows promotional layering.
+How to create total demand view across versions?,SUM all versions using version dimension. Or use `IF Version IN {List} THEN Include ELSE 0`. Aggregate by product/region.
+How to simulate future supply delay?,Use override: `Lead Time = Normal + Delay`. Use POST to shift availability. Helps run delay impact analysis.
+What is a planning anchor?,"A fixed point in time or quantity to align logic (e.g., Opening Inventory or Launch Date). Use as base reference across formulas."
+How to avoid SELECT hardcoding in formulas?,Use LOOKUP or system modules. SELECT should only be used for static references (like top-level items or versions).
+What is demand decomposition?,Break demand into components: Base + Trend + Seasonality + Noise. Helps in statistical forecast tuning.
+How to simulate material pooling across SKUs?,"If multiple SKUs share raw material, track total requirement and allocate proportionally. Use mapping and allocation logic."
+What is weighted average cost (WAC)?,WAC = SUM(Qty * Cost) / SUM(Qty). Used for inventory valuation. Helps calculate blended unit price after multiple receipts.
+What is alternate sourcing strategy?,"If primary fails, use secondary or tertiary. In Anaplan, create sourcing rank and switch logic based on availability."
+What is inventory blocking logic?,Flag SKUs/locations where stock is quarantined or under QA. Blocked stock is excluded from ATP and supply plan.
+How to set time horizon filters in UX?,"Use SYS Time filter with Booleans (Past, Current, Future). Use on grids and charts for dynamic views."
+How to display YoY comparison in Anaplan?,"Use OFFSET by -52 weeks (or -12 months). Compare values. E.g., `ThisYear - OFFSET(LastYear)`."
+How to track forecast override %?,Override % = (Override - Baseline) / Baseline. Shows magnitude of change. Helps analyze planner behavior.
+How to model scrap in production plan?,Scrap = % loss. Required Input = Demand / (1 - Scrap %). Helps plan additional input quantities.
+How to handle negative inventory in Anaplan?,"Use `MAX(0, Inventory)` to prevent reporting or planning based on negative values. Track separately if required."
+How to model lead time variability?,"Store Lead Time as range. Use average + safety buffer for planning. Variability = Risk, so increase safety stock accordingly."
+What is capacity utilization and how is it calculated?,Utilization = Used Capacity / Total Available. Track per resource or line. Helps in bottleneck detection.
+How to simulate delay propagation in supply chain?,Use chained OFFSET or POST to delay downstream events based on upstream delays. Helps simulate bullwhip effect.
+What is Order Cycle Time?,Time between order placement and receipt. Track by order ID. Used for SLA and performance metrics.
+How to build budget vs actuals dashboard in Anaplan?,Use side-by-side modules or versions. Use `Variance = Actual - Budget`. Color code KPIs. Filter by time and LOB.
+What is dynamic time filter?,"A Boolean line item based on current period logic. E.g., `IF Period >= Current THEN TRUE`. Used in dashboards for rolling views."
+How to handle promotional uplift in supply planning?,Store promo flag and % uplift. Adjust demand: `Promo Forecast = Base * (1 + Uplift%)`. Align with inventory logic.
+How to simulate expediting cost impact?,Expedite Cost = Units * Premium Rate. Triggered when ATP < Demand. Track against baseline cost.
+How to measure service level performance?,% of demand fulfilled on time. Service Level = `OnTimeFulfillment / TotalDemand`. Use for contract compliance.
+How to build a dual-sourcing supply model?,Store primary and secondary source. Use logic: `IF PrimaryCapExhausted THEN Use Secondary`. Balance lead time and cost.
+How to design inventory reconciliation logic?,"Reconciled Inventory = System Inventory - Counted Inventory. Track variance and reason codes (e.g., shrinkage)."
+How to model reorder interval logic?,"Use a time-driven IF condition. E.g., `IF MOD(WeekNumber, Interval) = 0 THEN Order ELSE 0`. Triggers periodic planning."
+What is inventory carry cost and how is it calculated?,Carry Cost = Inventory Value * Carry Cost %. Helps in trade-off decisions. Use annually or weekly prorated.
+How to simulate fulfillment prioritization?,Use RANK by customer priority. Allocate supply in descending order of priority until exhausted.
+How to handle alternate unit of measure (UOM)?,"Use conversion factor module (e.g., EA to CASE). Apply conversion before calculations. Keep UOM transparent in dashboards."
+How to model dynamic buffer?,"Buffer = f(Demand Variability, Lead Time). Adjust buffer weekly using moving CV. Helps improve agility."
+What is bullwhip effect and how to simulate it?,Demand variability amplifies upstream. Simulate by applying demand variability → forecast → orders → supply.
+How to do SKU rationalization?,"Evaluate demand velocity, margin, and inventory turn. Flag low performers. Propose phase-out or bundling."
+How to handle MOQ + Rounding Constraints?,"Order = `MAX(NetReq, MOQ)`. Then apply rounding logic using CEIL/FLOOR. Track excess due to rounding."
+What is the difference between forecast and target?,Forecast = Predicted demand. Target = Goal or budget. Maintain separately. Compare for gap analysis.
+How to model TCO (Total Cost of Ownership)?,TCO = Purchase + Transport + Carry + Handling. Sum across cost categories. Helps in supplier decision-making.
+What is over-forecasting and how to mitigate it?,Forecast consistently exceeds demand. Leads to excess inventory. Track Forecast Bias. Implement accountability.
+What is a constraint plan vs unconstrained plan?,"Unconstrained = Pure demand plan. Constrained = Includes supply, capacity, inventory limits. Build both for gap closure."
+How to perform ABC analysis in Anaplan?,Rank SKUs by Revenue or Volume. Assign A/B/C tiers using percentile bands. Store tier in SYS module.
+How to simulate consumption-based planning?,Trigger orders only when Inventory drops below reorder point. Use `IF Inventory < ROP THEN Reorder Qty` logic.
+What is forecast consumption logic?,Subtract actual orders from forecast: `Forecast Remaining = Forecast - Orders`. Ensures forecast doesn't overplan.
+How to implement aging logic on open orders?,Use order creation date vs current date. Flag aged orders. Use thresholds like >30 days to escalate.
+What is sourcing lead time vs transit lead time?,Sourcing = Supplier processing. Transit = Shipment movement. Sum both for total lead time. Track separately for agility.
+How to model inflation in supply chain cost?,Apply inflation % to base cost: `Adjusted Cost = Base * (1 + Inflation Rate)`. Track impact across time.
+What is forecast locking and how to implement it?,Use version control or Boolean locks. `IF Locked THEN PREVIOUS(Forecast) ELSE Input`. Prevents late-stage changes.
+How to calculate working capital tied in inventory?,Working Capital = Inventory Value * Capital Cost %. Helps in cash flow analysis.
+How to perform margin-at-risk simulation?,Simulate stockouts for high-margin SKUs. Use Fill Rate * Margin to identify profit risk. Prioritize protection.
+How to model lead time reduction project?,"Scenario with reduced lead time. Compare impact on inventory, service, responsiveness. Useful in what-if dashboards."
+How to automate exception-based alerts?,"Create thresholds. If breached, flag with Boolean. Surface in dashboard or email via Integration (e.g., CloudWorks)."
+What is economic order quantity (EOQ)?,EOQ = sqrt((2 * Demand * Order Cost) / Holding Cost). Balances order and carry cost. Use for bulk order planning.
+How to track lost sales due to stockout?,Lost Sales = Demand - Fulfilled. Track only when Inventory = 0. Store lost value and frequency.
+What is net landed cost?,"Total cost including purchase, freight, duty, and handling. Use for margin analysis and vendor comparison."
+What is ATP logic with future supply visibility?,ATP = On-hand + Planned Receipts - Allocated Orders. Use time-phased visibility to adjust future commitments.
+How to design pick-face replenishment logic?,Pick = High-access area. Replenish from bulk zone when level drops. Model Min/Max and triggers using OFFSET logic.
+How to show variance analysis in dashboard?,"Show columns: Forecast, Actual, Variance, % Variance. Use conditional formatting. Allow filters by time/product/region."
+How to model inbound shipment plan?,Planned Shipments = Orders * Lead Time Logic. Use POST to push quantity to expected arrival week.
+What is mean absolute deviation (MAD)?,MAD = AVERAGE(ABS(Forecast - Actual)). Shows average error magnitude. More robust than MAPE when Actuals are low.
+What is a demand coverage ratio?,Coverage = (Forecast / Sales History). Indicates aggressiveness of forecast. >1 implies overforecasting.
+How to build consensus planning logic?,Combine statistical + override. `Final = IF Override <> BLANK THEN Override ELSE Stat`. Store separately for comparison.
+How to design shared inventory planning across regions?,Use centralized inventory module. Allocate to regions using demand or priority. Helps manage pooled stock efficiently.
+What is demand lag and how to manage it?,"Time gap between demand signal and action. Minimize with faster sensing, system alerts, and collaborative planning."
+How to handle expired products in planning?,Track shelf life by receipt week. Remove expired from available inventory. Use `IF Age > Expiry THEN Block`.
+How to compare SKU performance YoY?,Use OFFSET by 52 weeks. Compare Volume or Revenue. Calculate YoY %: `(ThisYear - LastYear)/LastYear`.
+What is production wheel logic?,Predefined production sequencing to minimize changeover. Model using production calendar and fixed weekly slots.
+What is SKU rationalization scorecard?,"Track: Volume, Margin, Turns, Returns. Score each attribute. Rank and review for phase-out decision-making."
+How to simulate launch planning in supply chain?,"Model launch demand curve. Track availability, risk. Use flags for First Ship Date, Phase-In Ramp, Launch Readiness."
+How to model aggregated forecast at LOB level?,Use SUM by SYS module mapping Product → LOB. Enables LOB head to see rolled-up forecast.
+How to model intercompany transfers?,"Use Transfer Orders module. One location = Source, another = Destination. Track quantity, lead time, cost."
+What is an effective capacity plan?,"Capacity Plan that considers efficiency loss, maintenance, etc. `Effective Capacity = Rated * Efficiency%`."
+How to capture driver-based planning?,"Use Input drivers (e.g., Headcount, Price, Volume). Link calculations to outputs. Helps simulate impact easily."
+What is ideal summary for forecast accuracy Boolean?,Set summary = ANY or NONE depending on use. Avoid SUM or AVERAGE which give wrong rollups for Boolean.
+How to model substitute product logic?,Store mapping of Substitute SKU. Use logic: `IF Main SKU stock = 0 THEN Use Substitute`. Helps in fulfillment planning.
+How to model shelf-life constraints in supply?,Store age per inventory lot. Restrict shipment if Shelf Life < Threshold. Use dynamic filters.
+How to model stock rotation rules?,"If rotation (e.g., FIFO, LIFO), use timestamps and sort demand allocation accordingly. Helps comply with regulatory rules."
+How to model onboarding learning curve in production?,Efficiency = Learning Curve % based on period. Apply multiplier to planned output. Tracks ramp-up for new line.
+What is fill rate and how to calculate it?,"Fill Rate = Fulfilled Orders / Total Orders. Use `IF Total > 0 THEN MIN(100, Fulfilled / Total * 100) ELSE 0`. Cap at 100% to avoid overstatement."
+How to calculate forecast accuracy?,"Use formula: `1 - ABS(Forecast - Actual) / Actual`. Or use MAD, MAPE, Bias as supporting metrics. Choose based on data behavior."
+What is forecast bias?,Bias = Forecast - Actual. Positive bias = overforecast. Track to improve trust in forecast process.
+How to build a dynamic rolling average in Anaplan?,"Use OFFSET and conditional logic. E.g., for 5-week average: `AVERAGE(LineItem[LOOKUP: Week -1 to -5])`. Avoid hardcoding with dynamic ranges."
+What is a consensus forecast?,A forecast that blends statistical model + sales/marketing input. Often governed through override logic and approval process.
+How to do exception-based forecast validation?,"Use thresholds (e.g., % change > 30%). Flag outliers for review. Helps reduce noise in forecast updates."
+How to model procurement lead time?,Store lead time per vendor-SKU combo. Use POST to simulate delivery arrival week based on order date + lead time.
+What is days of inventory on hand (DOH)?,DOH = Inventory / (Daily Demand). Useful for setting safety stock and benchmarking. Compare across categories.
+What is a digital twin in supply chain context?,Digital replica of physical network. Used for simulation and optimization. Anaplan can model digital twin for planning scenarios.
+How to track aging of stock?,Store receipt week for lots. Calculate Age = Current Week - Receipt Week. Filter to show stock aging buckets.
+How to measure inventory turns?,Turns = Cost of Goods Sold / Average Inventory. Higher is better. Helps optimize working capital.
+How to model safety stock using statistical method?,"Safety Stock = Z * σ_d * √LT. Where σ_d is demand std deviation, LT is lead time. Z = Service level multiplier (e.g., 1.65 for 95%)."
+How to implement reorder point logic?,ROP = Safety Stock + (Average Demand * Lead Time). Trigger PO when Inventory <= ROP.
+How to simulate make vs buy decision?,Compare internal cost vs external price + TCO. Use what-if scenario toggles. Track impact on capacity and margin.
+How to track historical forecast accuracy?,Store snapshots of past forecasts. Use lookup based on time offset. Compare to actuals in that period.
+How to model backorders in planning?,Backorder = Demand - Fulfilled when Inventory = 0. Accumulate over time. Clear when replenished.
+How to model future constrained demand?,"Use MIN(Demand, Constraint Supply Available). Store separately to compare with unconstrained view."
+What is the role of inventory buffer in planning?,Buffers handle variability. Model as % of demand or lead time based. Helps reduce stockouts under volatility.
+How to integrate new product introduction (NPI)?,Use proxy product logic or phase-in curves. Plan ramp-up separately from base forecast. Align with marketing timeline.
+How to model forecast freeze period?,Use Boolean freeze window. Logic: `IF Freeze = TRUE THEN PREVIOUS(Forecast) ELSE Input`. Prevents last-minute changes.
+How to model push vs pull strategy?,Push = Forecast based. Pull = Order based. Store as setting at SKU level. Use logic to route planning logic accordingly.
+How to calculate cumulative supply/demand dynamically?,Use CUMULATE or `PREVIOUS + Current`. Always guard against circular references by decoupling input and feedback.
+How to handle short shelf life SKUs?,Reduce planning horizon. Increase frequency. Use FEFO logic (First Expire First Out). Avoid bulk ordering.
+What is FEFO?,"First Expire First Out. Ship inventory with earliest expiry first. Needed for pharma, food. Requires shelf life tracking per lot."
+How to track committed vs available inventory?,Committed = Allocated to orders. Available = On hand - Committed. Maintain separate modules if needed.
+What is pegging in supply chain planning?,"Traceability of supply element to its demand (e.g., PO → SO). Requires identifier linkage across modules."
+How to manage fill rate target breaches?,"Compare actual vs target. Use alert if `Fill Rate < Target`. Escalate based on threshold bands (e.g., <80% critical)."
+How to model rate-based production plan?,Production Rate = Units/Week. Plan = Rate * Available Time. Compare vs capacity to detect feasibility gaps.
+How to simulate BOM explosion in Anaplan?,Use multi-level list hierarchy. Apply `Component Qty = Parent Qty * BOM Ratio`. Sum by parent for rollup.
+How to model capacity constraints across SKUs?,Store capacity consumption per SKU. Sum across products per resource. Block plan if Total > Available.
+How to model customer allocation logic?,Use customer priority. Rank demand. Allocate supply until exhausted. Show unfulfilled demand separately.
+What is value at risk in planning?,VAR = Potential lost revenue due to stockout or delay. Track by SKU. Use to prioritize planning focus.
+How to model truckload constraints?,"Track volume or weight per order. Sum by shipment. If Total > Truck Capacity, split order. Use load builder logic."
+How to manage safety days vs safety stock?,Safety Days = Extra lead time. Safety Stock = Extra inventory. Convert one to other using daily demand logic.
+How to show frozen and flexible forecast zones?,Use time filters. Freeze Zone = Locked. Flexible Zone = Editable. Indicate in UX using color or flags.
+How to simulate what-if for supplier failure?,Set supply = 0 for specific vendor. Observe demand fulfillment and fill rate drop. Use scenario dimension to toggle.
+How to model seasonal profile in forecast?,Store seasonal index. Multiply base forecast. Update index annually based on historical trend.
+How to calculate working capital savings by reducing inventory?,Savings = Inventory Reduction * Cost of Capital. Use to justify lean initiatives.
+How to show actuals vs forecast over 52 weeks?,"Use weekly time scale. Line items: Forecast, Actual, Variance. Add conditional formatting and dynamic filters."
+What is the use of PREVIOUS vs OFFSET?,PREVIOUS = prior period in natural calendar. OFFSET = flexible offset by N periods. Use OFFSET to avoid circular logic.
+How to design snapshot logic across weeks?,Use IF `Is Current Week THEN Source ELSE PREVIOUS(Snapshot)`. Stores current data and retains past values.
+How to avoid SELECT in large scale models?,Use SYS modules and LOOKUP. SELECT is hardcoded and blocks dynamic modeling. Only use SELECT for constants.
+How to automate baseline and uplift logic?,Baseline = Stat model. Uplift = Promotion %. Final = Baseline * (1 + Uplift). Store uplift reasons for visibility.
+How to enable collaborative planning in Anaplan?,"Build override-enabled forecast. Use write access by user. Include commentary, review cycle, and version tracking."
+How to simulate supplier performance?,"Track OTIF, Lead Time Variance. Use as weighting factor in supply allocation. Visualize in supplier dashboard."
+How to model unit conversion in inventory?,"Use conversion matrix (EA, CASE, KG, etc.). Apply in calculation line item. Keep logic centralized."
+How to simulate financial impact of stockouts?,Lost Margin = Lost Sales * Margin %. Helps in prioritizing critical SKUs. Also impacts revenue forecast.
+How to model environmental constraints in supply?,Track CO2 per shipment. Compare vs sustainability goals. Filter vendors by compliance.
+How to build agile supply response logic?,"If lead time < threshold, allow responsive plan. Switch logic from push to pull. Enables agile fulfillment."
+How to simulate impact of capacity expansion?,"Increase capacity input. Observe effect on fill rate, inventory, responsiveness. Use scenarios for comparison."
+How to integrate AI forecast into Anaplan?,Import AI-generated forecast via Data Hub. Store separately. Compare against statistical + override forecast.
+How to model cross-docking logic?,Supply in = Supply out within same week. Inventory = 0. Use same time for inbound and outbound.
+How to do root cause analysis for demand error?,"Decompose forecast error into bias, promo impact, cannibalization. Use statistical and manual attribution."
+How to simulate bullwhip effect for education?,Create demand → forecast → order → production chain. Add variability. Show amplification at each stage.
+How to plan for end-of-life SKUs?,"Reduce forecast, avoid new POs, drain inventory. Flag SKU for monitoring. Alert if stockout before forecast ends."
+How to use tags/attributes in planning?,"Add attributes: Channel, Segment, Brand. Use for filtering, reporting, disaggregation. Store in SYS modules."
+How to support decision centric planning?,"Use scenario models, dashboard toggles, what-if controls. Shift focus from data entry to business decisions."
+How to calculate planner efficiency?,"Tasks completed / Total tasks. Or % plan adherence, forecast submission time, alert closure rate. Use in ops review."
+How to build SKU rationalization dashboard?,"Show SKU metrics: Volume, Margin, Turns, Returns. Sort, filter by category. Use bubble chart for visual decision-making."
+How to simulate resilience index?,"Track recovery time, fill rate dip, responsiveness to disruption. Score and benchmark. Build index across suppliers/regions."
+What is the final principle of Core_1 modeling?,"The model must serve the user - not the other way around. Design simply, test rigorously, and align to business truth."
