@@ -3,3 +3,5 @@ pandas
 gspread
 oauth2client
 openai
+faiss-cpu
+sentence-transformers
