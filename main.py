@@ -37,7 +37,7 @@ from openai import OpenAI
 openai_client = OpenAI(api_key=st.secrets.get("openai_api_key", ""))
 
 def query_with_fallback(user_query):
-    response = query_core_1(user_query)
+    response = query_core_1(user_query, top_k=3)
     source = "Core_1"
 
     if not response or response.strip() == "":
